@@ -1,0 +1,26 @@
+d:assets:0:application/unknown
+i:ButtonBlack.png:1332:image/png
+i:ButtonGrey.png:1331:image/png
+i:greenCheckMark.png:241:image/png
+i:HidePivot.png:828:image/png
+i:KButton.png:7362:image/png
+i:KButtonPressed.png:6052:image/png
+i:Lambda.png:3098:image/png
+d:licenses:0:application/unknown
+t:licenses/prada font license OFL.txt:4473:text/plain
+t:prada.fnt:59740:application/unknown
+i:prada.png:19100:image/png
+i:RedX.png:362:image/png
+i:RestorePivot.png:814:image/png
+i:SNotation.png:576:image/png
+i:SwapQmark.png:878:image/png
+i:UpArrowLargeSolid.png:1366:image/png
+i:UpArrowSolid.png:398:image/png
+t:com/badlogic/gdx/graphics/g3d/particles/particles.fragment.glsl:770:application/unknown
+t:com/badlogic/gdx/graphics/g3d/particles/particles.vertex.glsl:2886:application/unknown
+t:com/badlogic/gdx/graphics/g3d/shaders/default.fragment.glsl:5163:application/unknown
+t:com/badlogic/gdx/graphics/g3d/shaders/default.vertex.glsl:8824:application/unknown
+t:com/badlogic/gdx/graphics/g3d/shaders/depth.fragment.glsl:870:application/unknown
+t:com/badlogic/gdx/graphics/g3d/shaders/depth.vertex.glsl:2923:application/unknown
+t:com/badlogic/gdx/utils/arial-15.fnt:21743:application/unknown
+i:com/badlogic/gdx/utils/arial-15.png:21814:image/png
