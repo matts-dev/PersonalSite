@@ -1,0 +1,95 @@
+* {
+    font-family: 'Montserrat', sans-serif;
+    color: #f8f8f8f8;
+    letter-spacing: 0.05em;
+    /* z-index: 1; */
+}
+
+body {
+    /* background-image: url("./media/PixelArtScreenshots/forest-snow.png"); */
+    /* background-image: url("./media/PixelArtScreenshots/forest.png"); */
+    background-image: url("./media/PixelArtBackgrounds/GrassTile_medium.png");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    /* z-index: 0; */
+    background-color: rgba(255,255,255,255);
+}
+
+#websitename{
+    font-size: 3em;
+}
+
+#header_element{
+    position: relative;
+    /* top: -20em; */
+    /* left: 50%; */
+}
+
+#topbar {
+    /* align center requires margin, width, and align-content rules*/
+    margin: auto;
+    width: 85%;
+    align-content: center;
+
+    /* box model */
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding: 1em;
+    /* border: 1em solid #f8f8f8; */
+
+    /* text */
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 1em;
+
+
+}
+
+.collapsible{
+    max-height: 0;
+    overflow-y: hidden;
+    transition: 0.25s;
+}
+
+#sidebar{
+    /* padding: 1em 1em; */
+    /* margin: 1em 1em; */
+    width: 0;
+    overflow-x: hidden;
+    /* position: fixed; */
+    z-index: 1;
+    transition: 0.3s;
+
+}
+
+#main-content{
+    width: 85%;
+    align-content: center;
+    margin: auto;
+    padding: 1em 1em
+}
+
+.opaqueBackground
+{
+    background-color: rgba(8, 8, 8, 0.89);
+}
+
+.pagebreak{
+    margin: 2em;
+}
+
+.button {
+    text-transform: uppercase;
+    /* font-weight: 0.1em; */
+    font-weight: bold;
+    font-size: 1.5em;
+    border: 0em solid white;
+    padding: 0.5em 1em;
+    background-color: #252525;
+    /* background-color: rgba(8, 8, 8, 0.568); */
+}
+
+.button:hover{
+    background-color: #3f3f3f;
+}
