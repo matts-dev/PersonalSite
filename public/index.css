@@ -16,6 +16,8 @@ body {
     background-color: rgba(255,255,255,255);
 }
 
+/*testing */
+
 #websitename{
     font-size: 3em;
 }
@@ -42,8 +44,34 @@ body {
     text-transform: uppercase;
     text-align: center;
     letter-spacing: 1em;
+}
 
+.topbar_table{
+    align-content: center;
+    margin: auto; /* center table*/
+    /* table-layout: fixed; */
+    /* border: 1em solid white; */
+}
 
+.topbar_links {
+    text-align: left;
+    font-size: 0.7em;
+}
+
+.topbar_div
+{
+    padding-right: 1em;
+    padding-left: 1em;
+}
+
+td{
+    padding-right: 1em;
+    padding-left: 1em;
+    /* margin-left: 1em; */
+    /* margin-right: 1em; */
+    /* background-color: rgba(8, 8, 8, 0.482); */
+    /* margin: 0em 0em 1em 1em; */
+    /* border: 0.1em solid white; */
 }
 
 .collapsible{
@@ -69,6 +97,16 @@ body {
     margin: auto;
     padding: 1em 1em
 }
+
+.embeddedPage, .generatedObj{
+    /* size: 0; */
+    margin: 0em;
+    padding: 0em;
+    height: min-content;
+    width: min-content;
+    /* display: inline-block; */
+}
+
 
 .opaqueBackground
 {

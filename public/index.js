@@ -1,13 +1,11 @@
 const px_to_em = 16;
 const em_to_px = 1 / px_to_em;
 
-
 var collapseMap = {};
 var openItem = null;
 function handleCollapsibleClicked(element, targetContentId)
 {
     targetContent = document.getElementById(targetContentId)
-
 
     let collapseItem = collapseMap[element.id];
     if(collapseItem == null)
@@ -20,7 +18,6 @@ function handleCollapsibleClicked(element, targetContentId)
         }
         collapseMap[element.id] = collapseItem;
     }
-
 
     if(!collapseItem.open)
     {
@@ -61,13 +58,14 @@ function closeSidebar()
 
 loadContent("tests/embedtest.html");
 function loadContent(content){
-    var contentElement = document.getElementById("content");
+    let contentElement = document.getElementById("content");
+    // contentElement.className = "embeddedPage";
     if(contentElement)
     {
-        contentStr = '<object type="text/html" data=' + content + '></object>'
+        contentStr = '<object type="text/html" class="generatedObj" data=' + content + '></object>'
         contentElement.innerHTML = contentStr;
     }
     else{
-        Console.log("No content for this page")
+        console.log("No content for this page")
     }
 }

@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <style>
+            *, body, html, p, .embeddedPage
+            {
+                color: yellow;
+                margin:0;
+                padding:0;
+                background-color: black;
+                /* height: fit-content; */
+            }
+            .embeddedPage{
+                display: block;
+                object-fit: cover;
+            }
+        </style>
+        
+    </head>
+    <body>
+        <p> Embedded object below </p>
+        <object type="text/html" data='./embedtest.html' class="embeddedPage"></object>
+        <p> Embedded object above </p>
+        <br>
+        <br>
+        <br>
+
+        
+        <p> Embedded embed below </p>
+        <embed src='./embedtest.html' class='embeddedPage' > 
+        <p> Embedded embed above </p>
+
+        <p> Embedded iframe below </p>
+        <iframe src='./embedtest.html' class='embeddedPage'> </iframe>
+        <p> Embedded iframe above </p>
+        <br>
+        <br>
+        <br>
+
+    </body>
+</html>
