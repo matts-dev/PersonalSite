@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+
+<html>
+    <title>
+       Module Testing
+    </title>
+    <meta charset="utf-8">
+
+    <!-- keep canvas stretching using css -->
+    <style>
+         * {margin : 0; padding : 0;}
+        /* html, body {width:100%; height:100%;} */
+
+        /* canvas 
+        {
+            display: block; 
+            width : 100%;
+            height : 100%;
+            position : absolute
+        } */
+    </style>
+
+    <body>
+        <h1> This page is for testing javascript module importing and exporting. </h1>
+        <canvas id="glCanvas" width="1200" height="800"></canvas>
+    </body>
+
+    <script src="../shared_resources/gl-matrix-lintable.js"> </script>
+    <script src="main_module.js" type="module" > </script>
+
+    <!--notice, this dependency comes after! no order needed :3 -->
+    <!-- In fact, it appears the script include isn't even necessary -->
+    <script src="my_module.js" type="module"></script>
+
+    <!-- Try importing from this without it being included within the html file -->
+    <!-- <script src="../shared_resources/gl-matrix.js" type="module"></script> -->
+
+
+
+</html>

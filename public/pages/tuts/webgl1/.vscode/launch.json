@@ -1,0 +1,51 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        },
+        // {
+        //     "type":"chrome",
+        //     "request":"launch",
+        //     "name": "Launch against live server",
+        //     "url":"http://127.0.0.1:5500/1.Adding2DContentToAWebGLContext/index.html",
+        //     // "webRoot": "${workspaceFolder/MozzilaTutorials/1.Adding2DContentToAWebGLContext/}"
+        //     "webRoot": "${workspaceFolder}"
+        // }
+        
+        // {
+        //     "type":"chrome",
+        //     "request":"launch",
+        //     "name": "Launch against live server",
+        //     //"url":"http://127.0.0.1:5500/InputAndMouseCapture/index.html",
+        //     // "url":"http://127.0.0.1:5500/FullscreenTests/index.html",
+        //     "url":"http://127.0.0.1:5500/BitmapFontRendering/index.html",
+        //     "webRoot": "${workspaceFolder}"
+        // }
+
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name": "Launch against live server",
+            //"url":"http://127.0.0.1:5500/InputAndMouseCapture/index.html",
+            // "url":"http://127.0.0.1:5500/FullscreenTests/index.html",
+            "url":"http://127.0.0.1:5500/BitmapFontTesting/index.html",
+            "webRoot": "${workspaceFolder}"
+        }
+
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name": "Launch MusicTool with against live server",
+            "url":"http://127.0.0.1:5501/MusicTool/index.html",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}

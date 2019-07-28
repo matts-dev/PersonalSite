@@ -56,8 +56,9 @@ class Game
 
         this.lineRenderer = new EmeraldUtils.LineRenderer(this.gl);
 
-        this.useOrthoCamera = true;
+        this.camera.enableOrthoMode = true;
         this.orthoCameraHeight = 10;
+        this.zoomSpeed = 1;
 
         this.bRenderLineTrace = false;
         this.bStopTicks;
@@ -102,16 +103,12 @@ class Game
     {
         document.addEventListener('keydown', this.handleKeyDown.bind(this), /*useCapture*/ false);
         document.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
-        // document.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
-        // document.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
-        // document.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
-        // document.addEventListener('touchcancel', this.handleTouchCancel.bind(this), false);
+        document.addEventListener('wheel', this.handleMouseWheel.bind(this), false);
 
         this.glCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
         this.glCanvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
         this.glCanvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
         this.glCanvas.addEventListener('touchcancel', this.handleTouchCancel.bind(this), false);
-
         
         // document.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
         if(EmeraldUtils.supportPointerLock)
@@ -125,33 +122,46 @@ class Game
     handleKeyDown(event)
     {
         let deltaMovement = vec3.fromValues(0,0,0);
-        if(event.keyCode == key.up)
-        {
-            deltaMovement[0] = deltaMovement[0] + this.camera.up[0];
-            deltaMovement[1] = deltaMovement[1] + this.camera.up[1];
-            deltaMovement[2] = deltaMovement[2] + this.camera.up[2];
-        }
-        if(event.keyCode == key.down)
-        {
-            deltaMovement[0] = deltaMovement[0] + -this.camera.up[0];
-            deltaMovement[1] = deltaMovement[1] + -this.camera.up[1];
-            deltaMovement[2] = deltaMovement[2] + -this.camera.up[2];
-        }
-        if(event.keyCode == key.left)
-        {
-            deltaMovement[0] = deltaMovement[0] + -this.camera.right[0];
-            deltaMovement[1] = deltaMovement[1] + -this.camera.right[1];
-            deltaMovement[2] = deltaMovement[2] + -this.camera.right[2];
-        }
-        if(event.keyCode == key.right)
-        {
-            deltaMovement[0] = deltaMovement[0] + this.camera.right[0];
-            deltaMovement[1] = deltaMovement[1] + this.camera.right[1];
-            deltaMovement[2] = deltaMovement[2] + this.camera.right[2];
-        }
+        // if(event.keyCode == key.up)
+        // {
+        //     deltaMovement[0] = deltaMovement[0] + this.camera.up[0];
+        //     deltaMovement[1] = deltaMovement[1] + this.camera.up[1];
+        //     deltaMovement[2] = deltaMovement[2] + this.camera.up[2];
+        // }
+        // if(event.keyCode == key.down)
+        // {
+        //     deltaMovement[0] = deltaMovement[0] + -this.camera.up[0];
+        //     deltaMovement[1] = deltaMovement[1] + -this.camera.up[1];
+        //     deltaMovement[2] = deltaMovement[2] + -this.camera.up[2];
+        // }
+        // if(event.keyCode == key.left)
+        // {
+        //     deltaMovement[0] = deltaMovement[0] + -this.camera.right[0];
+        //     deltaMovement[1] = deltaMovement[1] + -this.camera.right[1];
+        //     deltaMovement[2] = deltaMovement[2] + -this.camera.right[2];
+        // }
+        // if(event.keyCode == key.right)
+        // {
+        //     deltaMovement[0] = deltaMovement[0] + this.camera.right[0];
+        //     deltaMovement[1] = deltaMovement[1] + this.camera.right[1];
+        //     deltaMovement[2] = deltaMovement[2] + this.camera.right[2];
+        // }
         if(event.keyCode == key.t)
         {
-            this.useOrthoCamera = !this.useOrthoCamera;
+            this.camera.enableOrthoMode = !this.camera.enableOrthoMode;
+            this.camera.enableMouseFollow = false;
+            vec3.set(this.camera.forward, 0, 0, -1);
+            vec3.set(this.camera.up, 0, 1, 0);
+            // this.glCanvas.exitPointerLock();
+            this.camera._squareBases();
+        }
+        if(event.keyCode == key.minus_underscore)
+        {
+            this.updateZoom(1);
+        }
+        if(event.keyCode == key.equals_plus)
+        {
+            this.updateZoom(-1);
         }
 
         vec3.scale(deltaMovement, deltaMovement, this.camera.speed * this.deltaSec);
@@ -167,7 +177,7 @@ class Game
             if(elementClicked == this.glCanvas)
             {
                 // this.handleCanvasClicked(e);
-                if(this.useOrthoCamera)
+                if(this.camera.enableOrthoMode)
                 {
                     let canvas = this.gl.canvas;
                     let canvasHalfWidth = canvas.clientWidth / 2.0;
@@ -211,6 +221,18 @@ class Game
         }
     }
 
+    updateZoom(normalizedY)
+    {
+        this.orthoCameraHeight = this.orthoCameraHeight + normalizedY * this.zoomSpeed;
+    }
+
+    handleMouseWheel(e)
+    {
+        //wheel event is not supported by safari
+        let normalizedY = e.deltaY / Math.abs(e.deltaY);
+        this.updateZoom(normalizedY);
+    }
+
     handleTouchEnd(event)
     {
         this.piano.keys[7].press();
@@ -225,14 +247,14 @@ class Game
     }
     handleTouchCancel(event)
     {
-        this.piano.keys[11].press();
+        this.piano.keys[1].press();
     }
 
 
     handleCanvasClicked( e )
     {
         // #TODO move this code to utils so it can be used in other demos
-        if(this.useOrthoCamera)
+        if(this.camera.enableOrthoMode)
         {
             //moved to on clickdown so sound is immediate
             // let canvas = this.gl.canvas;
@@ -283,7 +305,7 @@ class Game
 
     handlePointerLockChange()
     {
-        if(!this.useOrthoCamera)
+        if(!this.camera.enableOrthoMode)
         {
             this.camera.enableMouseFollow = EmeraldUtils.isElementPointerLocked(this.glCanvas);
         }
@@ -315,10 +337,7 @@ class Game
         /////////////////////////////////////
         // TICK
         /////////////////////////////////////
-        if(!this.useOrthoCamera)
-        {
-            this.camera.tick(this.deltaSec);
-        }
+        this.camera.tick(this.deltaSec);
 
         /////////////////////////////////////
         // RENDER
@@ -328,8 +347,8 @@ class Game
         let aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
         let perspectiveMat = null;
-        if(this.useOrthoCamera){ perspectiveMat = this.camera.getOrtho(aspect * this.orthoCameraHeight, this.orthoCameraHeight);}
-        else                   { perspectiveMat = this.camera.getPerspective(aspect); }
+        if(this.camera.enableOrthoMode) { perspectiveMat = this.camera.getOrtho(aspect * this.orthoCameraHeight, this.orthoCameraHeight);}
+        else                            { perspectiveMat = this.camera.getPerspective(aspect); }
 
         let viewMat = this.camera.getView();
 
