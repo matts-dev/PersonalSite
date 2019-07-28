@@ -152,6 +152,15 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["ù"] = null;
         this._glyphTable["ü"] = null;
         //there exists more accent than these
+
+        for(let key in this._glyphTable)
+        {
+            let glyph = this._glyphTable[key]
+            if(glyph)
+            {
+                glyph.symbol = key;
+            }
+        }
     }
 
 }

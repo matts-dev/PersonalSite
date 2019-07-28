@@ -1,5 +1,6 @@
-import {vec3} from "../gl-matrix_esm/index.js"
-import {initShaderProgram, Texture} from "./emerald-opengl-utils.js"
+import {vec3, mat4} from "../gl-matrix_esm/index.js"
+import {initShaderProgram, Texture, Transform} from "./emerald-opengl-utils.js"
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -105,22 +106,87 @@ export class Glyph
 
 }
 
+export class BitmapTextblock3D
+{
+    constructor(gl, bitMapFont, startText="", x, y, z)
+    {
+        this.gl = gl;
+        this.bitMapFont = bitMapFont;
+        this.text = startText;
+
+        this.xform = new Transform();
+        this.xform.pos = vec3.fromValues(x, y, z); 
+        this.xform.scale = vec3.fromValues(1,1,1);
+
+        this.bCenterHorizontal = false;
+        this.bCenterVertical = false;
+    }
+
+    render(projection, view, parentModelMat = mat4.create())
+    {
+        //this isn't the fastest text renderer as it renders each glyph separating rather than
+        //caching them within a texture and rendering that texture each time.
+        if(this.text)
+        {
+            let width_so_far = 0;
+
+            //calculate width for pivot matrix
+            for(let char_idx = 0; char_idx < this.text.length; ++char_idx)
+            {
+                let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
+                width_so_far += glyph.width;
+            }
+
+            let textBlockModelMat = this.xform.toMat4(mat4.create());
+
+            //TODO calculate pivot matrix
+            let pivotMatrix = mat4.create();
+            let pivotPos = vec3.fromValues(0,0,0);
+            pivotPos[0] = this.bCenterHorizontal ? -width_so_far / 2.0 : 0;
+            pivotPos[1] = this.bCenterVertical ? -0.5 : 0;
+
+            //transform bitmap to parent space with pivot correction
+            let parentTextblockMat = mat4.create();
+            mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat);
+            mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat);
+            mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
+
+            let glyphPos = vec3.clone(this.xform.pos);
+            let x_offset = 0;
+            for(let char_idx = 0; char_idx < this.text.length; ++char_idx)
+            {
+                let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
+                x_offset += glyph.width;
+                glyphPos[0] = this.xform.pos[0] + x_offset;
+
+                let glyphModelMat = mat4.create();
+                mat4.translate(glyphModelMat, glyphModelMat, glyphPos);
+
+                //transform bitmap to parent space with pivot correction
+                mat4.mul(glyphModelMat, parentTextblockMat, glyphModelMat);
+
+                glyph.render(view, projection, glyphModelMat);
+            }
+        }
+    }
+}
+
 export class GlyphRenderer
 {
     /**
      * 
      * @param {*} gl 
      * @param {*} glyphShader 
-     * @param {*} fonTextureObj 
+     * @param {*} fontTextureObj 
      * @param {*} uvPos 
      * @param {*} width 
      * @param {*} height 
      */
-    constructor(gl, glyphShader, fonTextureObj, uvPos, width, height)
+    constructor(gl, glyphShader, fontTextureObj, uvPos, width, height)
     {
         this.gl = gl;
         this.glyphShader = glyphShader;
-        this.fontTextureObj = fonTextureObj;
+        this.fontTextureObj = fontTextureObj;
         this.uvPos = uvPos;
         this.width = width;
         this.height = height;
@@ -132,7 +198,11 @@ export class GlyphRenderer
     {
         const posVBO = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, posVBO);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quad3DPositions_idx), gl.STATIC_DRAW);
+
+        // transform this by scale [0.0,0.0,0.0,    1.0,0.0,0.0,    0.0,1.0,0.0,   1.0,1.0,0.0]
+        let aspect = this.width / this.height;
+        let correctedPos = [0.0,0.0,0.0,   aspect,0.0,0.0,    0.0,1,0.0,   aspect, 1,0.0] //just use aspect for width instead of typeing aspect*1
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(correctedPos), gl.STATIC_DRAW);
 
         //quad indices
         // 2---3
@@ -188,7 +258,6 @@ export class GlyphRenderer
 
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, /*offset*/0);
     }
-    
 }
 
 /** A rendering utility for rendering a glpy */
