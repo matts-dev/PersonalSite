@@ -39,5 +39,13 @@
             "url":"http://127.0.0.1:5500/public/index.html",
             "webRoot": "${workspaceFolder}"
         }
+
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name": "Launch Bitmap Test",
+            "url":"http://127.0.0.1:5500/public/pages/tuts/webgl1/BitmapFontTesting/index.html",
+            "webRoot": "${workspaceFolder}"
+        }
     ]
 }

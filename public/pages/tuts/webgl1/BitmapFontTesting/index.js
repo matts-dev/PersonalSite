@@ -150,6 +150,10 @@ class Game
         this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
         // this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Grass2.png");
         this.testGlyphRenderer = this.bitmapFont.getGlyphFor("K");
+
+        this.textblock1 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont,
+             "The quick brown fox jumps over a lazy dog. !@#$%^&*()_+=-0987654321`~ <>,./?\\|]}[{;:\"'}]",
+             0, 0, 4);
         
         this.testGlyphs = ["a","b","c","d","e","f","h","g","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","-","=","!","@","#","$","%","^","&","*","(",")","_","+",";",":","'","\"","[","{","]","}","/","?",".",">",",","<","\\","|","`","~","÷","©","®","ç","â","à","é","è","ê","ë","î","ï","ô","û","ù","ü",];
 
@@ -293,9 +297,39 @@ class Game
 
     handleKeyDown(event)
     {
-        if(event.keyCode == key.up)
+        let delta_idx = 0;
+        if(event.keyCode == key.left || event.keyCode == key.q)
         {
-            console.log("object handler up pressed");
+            delta_idx = -1;
+        }
+        if(event.keyCode == key.right || event.keyCode == key.e)
+        {
+            delta_idx = 1;
+        }
+
+        if(delta_idx != 0)
+        {
+            //find the current index
+            //try to find a glyph for the current index + delta index % total indices
+            if(this.testGlyphRenderer)
+            {
+                let curr_idx = 0;
+                for(let idx = 0; idx < this.testGlyphs.length; ++idx)
+                {
+                    let letter = this.testGlyphs[idx];
+                    if(this.testGlyphRenderer.symbol === letter)
+                    {
+                        curr_idx = idx;
+                        break;
+                    }
+                }
+                curr_idx = (curr_idx + delta_idx) % this.testGlyphs.length;
+                this.testGlyphRenderer = this.bitmapFont.getGlyphFor(this.testGlyphs[curr_idx]);
+            }
+            else
+            {
+                this.testGlyphRenderer = this.bitmapFont.getGlyphFor(this.testGlyphs[0]);
+            }
         }
     }
 
@@ -491,6 +525,10 @@ class Game
             this.testGlyphRenderer.render(viewMat, perspectiveMat, modelMat);
         }
 
+        if(this.textblock1)
+        {
+            this.textblock1.render(perspectiveMat, viewMat);
+        }
 
         requestAnimationFrame(this.boundGameLoop);
     }
