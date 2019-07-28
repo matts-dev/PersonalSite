@@ -1,0 +1,30 @@
+<html>
+    <title>
+       Bitmap font testing
+    </title>
+    <meta charset="utf-8">
+
+    <!-- keep canvas stretching using css -->
+    <style>
+         * {margin : 0; padding : 0;}
+        /* html, body {width:100%; height:100%;} */
+
+        /* canvas 
+        {
+            display: block; 
+            width : 100%;
+            height : 100%;
+            position : absolute
+        } */
+    </style>
+
+    <body>
+        <canvas id="glCanvas" width="1200" height="800"></canvas>
+        <!-- <canvas id="glCanvas"></canvas> -->
+    </body>
+    <script src="nonmodule_include.js"> </script>
+    <!-- <script src="../shared_resources/gl-matrix.js"> </script> -->
+    <!-- <script src="../shared_resources/bitmap_font.js" type="module"> </script> -->
+    <script src="../shared_resources/bitmap_font.js"> </script>
+    <script src="main_webgl.js" type="module"></script>
+</html>

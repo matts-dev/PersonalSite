@@ -686,6 +686,7 @@ export class Camera
         this.inputMonitor = inputMonitor;
         this.enableInput = true;
         this.enableMouseFollow = false;
+        this.enableOrthoMode = false;
         
         //perspective fields
         this.FOV_degrees = 45 * (Math.PI/180);
@@ -714,6 +715,7 @@ export class Camera
         this._cachedStartForward = vec3.clone(forward_vec3);
         this._cachedStartUp = vec3.clone(up_vec3);
         this._cachedRight = crossAndNormalize(this._cachedStartForward, this._cachedStartUp);
+
 
         //initialize
         this._squareBases();
@@ -832,14 +834,31 @@ export class Camera
             vec3.set(dir, 0,0,0);
             if(this.inputMonitor.pressedStateArray[key.up] || this.inputMonitor.pressedStateArray[key.w])
             {
-                let upDir = vec3.copy(this.vec3buffer2, this.forward);
-                dir = vec3.add(dir, dir, upDir);
+                if(this.enableOrthoMode)
+                {
+                    let upDir = vec3.copy(this.vec3buffer2, this.up);
+                    dir = vec3.add(dir, dir, upDir);
+                }
+                else
+                {
+                    let upDir = vec3.copy(this.vec3buffer2, this.forward);
+                    dir = vec3.add(dir, dir, upDir);
+                }
             }
             if (this.inputMonitor.pressedStateArray[key.down]|| this.inputMonitor.pressedStateArray[key.s])
             {
-                let downDir = vec3.copy(this.vec3buffer2, this.forward);
-                vec3.scale(downDir, downDir, -1);
-                dir = vec3.add(dir, dir, downDir);
+                if(this.enableOrthoMode)
+                {
+                    let downDir = vec3.copy(this.vec3buffer2, this.up);
+                    vec3.scale(downDir, downDir, -1);
+                    dir = vec3.add(dir, dir, downDir);                    
+                }
+                else
+                {
+                    let downDir = vec3.copy(this.vec3buffer2, this.forward);
+                    vec3.scale(downDir, downDir, -1);
+                    dir = vec3.add(dir, dir, downDir);
+                }
             }
             if (this.inputMonitor.pressedStateArray[key.right] || this.inputMonitor.pressedStateArray[key.d])
             {
@@ -848,6 +867,7 @@ export class Camera
             }
             if (this.inputMonitor.pressedStateArray[key.left] || this.inputMonitor.pressedStateArray[key.a])
             {
+
                 let leftDir = vec3.copy(this.vec3buffer2, this.right);
                 vec3.scale(leftDir, leftDir, -1);
                 dir = vec3.add(dir, dir, leftDir);

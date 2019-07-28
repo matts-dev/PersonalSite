@@ -204,6 +204,7 @@ export class Piano
                 if(!key.isWhiteKey)
                 {
                     keyOffset[0] += (this.keyData.whiteKey.width + this.keyData.spacing / 2.0) - this.keyData.blackKey.width/2;
+                    keyOffset[1] += 0.001;//push up y
                     keyOffset[2] += 0.1;//push black keys up in z
                 }
 
