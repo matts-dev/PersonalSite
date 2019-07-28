@@ -1,0 +1,193 @@
+
+class RendererBase
+{
+
+}
+
+class BitmapFontTestRenderer extends RendererBase
+{
+    constructor() 
+    {
+        super();
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Initialization of resources
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        const canvas = document.querySelector("#glCanvas");
+        let gl = canvas.getContext("webgl");
+        if(!gl)
+        {
+            alert("Failed to get webgl context; browser may not support webgl 1.0");
+            return;
+        }
+
+        var browserSize = getBrowserSize();
+        canvas.width = browserSize.width;
+        canvas.height = browserSize.height;
+
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        const supportPointerLock = 
+            "pointerLockElement" in document ||
+            "mozPointerLockElement" in document ||
+            "webkitPointerLockElement" in document;
+        if(!supportPointerLock)
+        {
+            alert("Your browser does not support pointer locking! Which means you can't use the mouse to move camera like in most games");
+        }
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        // Member Variables (grouped in single location for readability)
+        /////////////////////////////////////////////////////////////////////////////////////////////
+        this.gl = gl;
+        this.glCanvas = canvas;
+
+        //TODO refactor these input states into a stand alone class
+        this.up_pressed = false; 
+        this.down_pressed = false; 
+        this.left_pressed = false; 
+        this.right_pressed = false; 
+
+        this.pointerLocked = false;
+        this.supportPointerLock = supportPointerLock;
+
+        //callback binding objects
+        this.boundGameLoop = this.gameLoop.bind(this);
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        //Event Handler Bindings (after state initialized)
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        // event capturing means start events at top level and move down
+        var useCapture = false; //false means use event bubbling
+        document.addEventListener('keydown', this.handleKeyDown.bind(this), useCapture); //TODO when refactoring input state, have the class itself listen to these changes
+        document.addEventListener('keyup', this.handleKeyUp.bind(this), useCapture);
+        window.addEventListener("resize", this.handleResize.bind(this), false);
+        document.addEventListener('mousemove', this.handleMouseMoved.bind(this));
+        
+        this.glCanvas.requestPointerLock = this.glCanvas.requestPointerLock || this.glCanvas.mozrequestPointerLock || this.glCanvas.webkitrequestPointerLock;
+        document.exitPointerLock = document.exitPointerLock || document.mozexitPointerLock || document.webkitexitPointerLock;
+        document.addEventListener("pointerlockchange",       this.handlePointerLockChanged.bind(this), false);
+        document.addEventListener("mozpointerlockchange",    this.handlePointerLockChanged.bind(this), false);
+        document.addEventListener("webkitpointerlockchange", this.handlePointerLockChanged.bind(this), false);
+        document.addEventListener("pointerlockerror",        this.handlePointerLockError.bind(this), false);
+        document.addEventListener("mozpointerlockerror",     this.handlePointerLockError.bind(this), false);
+        document.addEventListener("webkitpointerlockerror",  this.handlePointerLockError.bind(this), false);
+
+        canvas.onclick = this.handleCanvasClicked;
+        
+    }
+
+    handleResize()
+    {
+        console.log("resize detected");
+
+        const size = getBrowserSize();
+        this.glCanvas.width = size.width;
+        this.glCanvas.height = size.height;
+        this.gl.viewport(0,0,size.width,size.height);
+    }
+
+    handleCanvasClicked()
+    {
+        //the line of code below should be set up in the ctor; it makes pointer lock browser independent
+        //this.glCanvas.requestPointerLock = this.glCanvas.requestPointerLock || this.glCanvas.mozrequestPointerLock || this.glCanvas.webkitrequestPointerLock;
+        this.glCanvas.requestPointerLock();
+    }
+
+    handleKeyDown(event)
+    {
+        if(event.keyCode == up_keycode) {   this.up_pressed = true; }
+        if(event.keyCode == down_keycode) { this.down_pressed = true; }
+        if(event.keyCode == left_keycode) { this.left_pressed = true; }
+        if(event.keyCode == right_keycode){ this.right_pressed = true; }
+    }
+
+    handleKeyUp(event)
+    {
+        if(event.keyCode == up_keycode) {    this.up_pressed = false; }
+        if(event.keyCode == down_keycode) {  this.down_pressed = false; }
+        if(event.keyCode == left_keycode) {  this.left_pressed = false; }
+        if(event.keyCode == right_keycode) { this.right_pressed = false; }
+    }
+
+    handleMouseMoved(e)
+    {
+        var movX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
+        var movY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
+
+        if(this.pointerLocked)
+        {
+            /////////////////////////////////////////////////////////////////////////
+            // TODO refactor these into a camera class
+            /////////////////////////////////////////////////////////////////////////
+            let camVecs = calcCamBasisVec();
+            
+            //fps camera, for free quat camera we can cache the up each frame after calculating bases again
+            const yawAxis = camVecs.up;
+            const pitchAxis = camVecs.right;
+        
+            var qYaw = quat.create();
+            var qPitch = quat.create();
+        
+            //adhoc fractions -- this could actually just use pixels with some scalar to control speed
+            var fractionX = movX / glCanvas.clientWidth;
+            var fractionY = movY / glCanvas.clientHeight;
+        
+            quat.setAxisAngle(qYaw, yawAxis, fractionX);
+            quat.setAxisAngle(qPitch, pitchAxis, -fractionY);
+            var qRot = quat.create();
+            quat.multiply(qRot, qYaw, qPitch);
+
+            vec3.transformQuat(camForwardVec, camForwardVec, qRot);
+            vec3.normalize(camForwardVec, camForwardVec);
+        }
+    }
+
+    handlePointerLockChanged()
+    {
+        if(document.pointerLockElement  === this.glCanvas
+            ||  document.mozpointerLockElement  === this.glCanvas
+            ||  document.webkitpointerLockElement === this.glCanvas
+            )
+        {
+            //console.log("canvas locked");
+            this.pointerLocked = true;
+        }
+        else
+        {
+            //console.log("canvas unlocked");
+            this.pointerLocked = false;
+        }
+    }
+
+    handlePointerLockError(/*e*/) 
+    {
+
+    }
+
+    start()
+    {
+
+        // function gameLoop() 
+        // {
+        //     this.gl.clearColor(0,0,0,1);
+        //     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+        //     requestAnimationFrame(gameLoop);    
+        // }
+        requestAnimationFrame(this.boundGameLoop);
+    }
+
+    gameLoop()
+    {
+        //this is not bound to the function :\
+        //need to use it something like    RequestAnimationFrame(this.gameLoop.bind(this));
+        //problem is... I think this creates a new function every tick! not good
+        //perhaps global handlers is the appropriate way to do this. :\ 
+        this.gl.clearColor(0,0,0,1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+        requestAnimationFrame(this.boundGameLoop);    
+    }
+}
