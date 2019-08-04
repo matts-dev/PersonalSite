@@ -106,6 +106,28 @@ export class Glyph
 
 }
 
+//information on idiomatic ways of achiving enums in JS
+//https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6
+export const VAlignment = Object.freeze({
+    TOP:   Symbol("top"),
+    MIDDLE:  Symbol("middle"),
+    BOTTOM: Symbol("bottom")
+});
+export const HAlignment = Object.freeze({
+    LEFT:   Symbol("left"),
+    MIDDLE:  Symbol("middle"),
+    RIGHT: Symbol("right")
+});
+
+let alignMultHelper = 
+{
+    LEFT : -1.0,
+    RIGHT : 0,
+    CENTER : -0.5,  //take half distance
+    TOP : 1.0,
+    BOTTOM: 0.0,
+};
+
 export class BitmapTextblock3D
 {
     constructor(gl, bitMapFont, startText="", x, y, z)
@@ -118,7 +140,11 @@ export class BitmapTextblock3D
         this.xform.pos = vec3.fromValues(x, y, z); 
         this.xform.scale = vec3.fromValues(1,1,1);
 
+        this.hAlignment = HAlignment.RIGHT;
+        this.vAlignment = VAlignment.BOTTOM;
+
         this.bCenterHorizontal = false;
+        this.bLeftAlign = false; 
         this.bCenterVertical = false;
         this.localWidth = 0;
 
@@ -149,17 +175,30 @@ export class BitmapTextblock3D
 
             let textBlockModelMat = this.xform.toMat4(mat4.create());
 
-            //TODO calculate pivot matrix
+            let sizeReferenceGlyph = this.bitMapFont.getGlyphFor("A");
+
             let pivotMatrix = mat4.create();
             let pivotPos = vec3.fromValues(0,0,0);
-            pivotPos[0] = this.bCenterHorizontal ? -width_so_far / 2.0 : 0;
-            pivotPos[1] = this.bCenterVertical ? -0.5 : 0;
+
+            //BEFORE CHANING PIVOT ALIGNMENT: right alight means the cursor appears on the right; left align means
+            //the cursor is on the left. Top align means an imaginary cursor would be on top. So, a left algined
+            //text will actually have a pivot point on the right (think about: the text grows towards the right; where's the stationary point?)
+            let hAlignFactor = 0.0;
+            if      (this.hAlignment == HAlignment.LEFT)    { hAlignFactor = -1.0;}
+            else if (this.hAlignment == HAlignment.CENTER)  { hAlignFactor = -0.5;} //move by half length
+
+            let vAlignFactor = 0.0;
+            if      (this.vAlignment == VAlignment.TOP)     { vAlignFactor = -1.0;}
+            else if (this.vAlignment == VAlignment.CENTER)  { vAlignFactor = -0.5;} //move by half length
+            pivotPos[0] = width_so_far * hAlignFactor;
+            pivotPos[1] = sizeReferenceGlyph.height * vAlignFactor;
+            mat4.translate(pivotMatrix, pivotMatrix, pivotPos);
 
             //transform bitmap to parent space with pivot correction
             let parentTextblockMat = mat4.create();
-            // mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat);
-            // mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat);
-            // mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
+            // mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat); //TODO
+            // mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat); //TODO
+            mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
 
             let glyphPos = vec3.clone(this.xform.pos);
             let x_offset = 0;
@@ -316,8 +355,6 @@ export class GlyphInstance
  *  -to make the math easy, font textures are expected to have a size that is a square power of 2; eg 1024 x 1024. Otherwise 
  *     there will be some stretching that will need to be accounted for.
  */
-
- //TODO remove this class? Seems like BitmapFont3d covers all of this?
 export class BitmapFont
 {
     constructor(glContext, textureURL)
@@ -331,12 +368,6 @@ export class BitmapFont
 
     getGlyphShader(){
         return this.shader;
-    }
-
-    render(text)
-    {
-        //TODO
-        let gl = this.gl;
     }
 
     getGlyphFor(letter)

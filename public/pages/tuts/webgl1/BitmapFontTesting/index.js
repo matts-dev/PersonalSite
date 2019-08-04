@@ -2,7 +2,7 @@ import * as EmeraldUtils from "../shared_resources/EmeraldUtils/emerald-opengl-u
 import * as key from "../shared_resources/EmeraldUtils/browser_key_codes.js"
 import {Camera} from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js"
 import {vec2, vec3, vec4, mat4} from "../shared_resources/gl-matrix_esm/index.js"
-import {RenderBox3D, GlyphRenderer} from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
+import {RenderBox3D, GlyphRenderer, VAlignment, HAlignment} from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
 import * as BMF from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
 import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_BitmapFontConfig.js";
 
@@ -148,7 +148,7 @@ class Game
             );
         
         this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
-        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("|"); //modify this to view your target glyph
+        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("m"); //modify this to view your target glyph
 
         this.textblock0 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "abc", 0, 0, -4);
 
@@ -162,14 +162,40 @@ class Game
         
         this.testGlyphs = ["a","b","c","d","e","f","h","g","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","'","?","\"","!","(","%",")","[","#","]","{","@","}","/","&","\\","<","-","+","÷","=",">","®","©","$",":",";",",",".","*","^","_","|","`","~"," ","ç","â","à","é","è","ê","ë","î","ï","ô","û","ù","ü","-"];
 
+        
+        this.testPivotLoc = vec3.fromValues(-3, 0, -5);
+        let bl = this.testPivotLoc;//bottom left
+        this.textblock_default_pos = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "default bottom left pivot (top-right-align).",   bl[0],      bl[1],      bl[2] + 0.005);
+        this.textblock_center_w = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "width-centered (top-center aligntment)",               bl[0] + 1,  bl[1],      bl[2] + 0.005);
+        this.textblock_center_w.hAlignment = HAlignment.CENTER;
+        this.textblock_center_hw = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "width-height-centered.",       bl[0] + 1,  bl[1] + 1,  bl[2] + 0.005);
+        this.textblock_center_hw.hAlignment = HAlignment.CENTER;
+        this.textblock_center_hw.vAlignment = VAlignment.CENTER;
+        this.textblock_left =  new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "top right pivot (bottom, left alignment).",                    bl[0],      bl[1] + 1,  bl[2] + 0.005);
+        this.textblock_left.vAlignment = VAlignment.TOP;
+        this.textblock_left.hAlignment = HAlignment.LEFT;
+
+        this.textblock_understandalign = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "Alignment = direction text grows from pivot point", bl[0] + 0.5, bl[1] + 0.5, bl[2] +0.0005);
+        this.textblock_understandalign.hAlignment = HAlignment.CENTER;
+        this.textblock_understandalign.vAlignment = VAlignment.CENTER;
+
         this.bRenderDemoBaselines = true;
 
         //camera positions for quick testing
-        // this.camera.position = vec3.fromValues(0.5,1.155,-4); //look at font texture and red bounding boxes
-        // this.camera.position = vec3.fromValues(1.3,1,-5.5); //look at underline text (q)
-        // this.camera.position = vec3.fromValues(1.6,1,-5.5); //look at underline text (y)
-        // this.camera.position = vec3.fromValues(2.1,1,-5.5); //look at underline text (symbols)
-        this.camera.position = vec3.fromValues(2.3,1,-5.5); //look at underline text (brackets)
+        this.cameraPositions = []
+        this.cameraPositionIdx = 0;
+        this.cameraPositions.push(vec3.fromValues(0.5,1.155,0)); //look at font texture and red bounding boxes
+        this.cameraPositions.push(vec3.fromValues(0.5,1.155,-4)); //look at font texture and red bounding boxes
+        this.cameraPositions.push(vec3.fromValues(bl[0],    bl[1],      bl[2] + 1)); //look at pivot locations
+        this.cameraPositions.push(vec3.fromValues(bl[0] + 1,bl[1],      bl[2] + 1)); //look at pivot locations
+        this.cameraPositions.push(vec3.fromValues(bl[0] + 1,bl[1]+ 1,   bl[2] + 1)); //look at pivot locations
+        this.cameraPositions.push(vec3.fromValues(bl[0],    bl[1] + 1,  bl[2] + 1)); //look at pivot locations
+        this.cameraPositions.push(vec3.fromValues(1.3,1,-5.5)); //look at underline text (q)
+        this.cameraPositions.push(vec3.fromValues(1.6,1,-5.5)); //look at underline text (y)
+        this.cameraPositions.push(vec3.fromValues(2.1,1,-5.5)); //look at underline text (symbols)
+        this.cameraPositions.push(vec3.fromValues(2.3,1,-5.5)); //look at underline text (brackets)
+
+        this.camera.position = this.cameraPositions[0];
 
         // end this module specific code
         ////////////////////////////////////////////////////////////////////
@@ -345,6 +371,17 @@ class Game
                 this.testGlyphRenderer = this.bitmapFont.getGlyphFor(this.testGlyphs[0]);
             }
         }
+
+        if(event.keyCode == key.digit_1 || event.keyCode == key.digit_2)
+        {
+            let deltaPositionIdx = event.keyCode == key.digit_1 ? -1 : 1;
+            this.cameraPositionIdx += deltaPositionIdx;
+            this.cameraPositionIdx = (this.cameraPositionIdx + this.cameraPositions.length) % this.cameraPositions.length; //handles negative wraparound too
+
+            this.camera.position = vec3.clone(this.cameraPositions[this.cameraPositionIdx]);
+            this.camera.forward = vec3.fromValues(0,0,-1);
+            this.camera._squareBases();
+        }
     }
 
     handleCanvasClicked()
@@ -490,6 +527,28 @@ class Game
                 
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
+
+            { //render offset testing quad; pivot is bottom left
+                let fontTexture = this.textures.grass;
+                let width = fontTexture.srcImage.width === 0 ? 1 :  fontTexture.srcImage.width;
+                let height = fontTexture.srcImage.height === 0 ? 1 :  fontTexture.srcImage.height; 
+                let aspect = width / height;
+
+                let scale = vec3.fromValues(aspect, 1, 1);
+
+                let testTexturePivotModelMat = mat4.create();
+                mat4.translate(testTexturePivotModelMat, testTexturePivotModelMat, this.testPivotLoc);
+                mat4.scale(testTexturePivotModelMat, testTexturePivotModelMat, scale);
+                
+                let view_model = mat4.multiply(mat4.create(), viewMat, testTexturePivotModelMat)
+                gl.uniformMatrix4fv(this.shaders.quad3D.uniforms.view_model, false, view_model);
+                
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, this.textures.grass.glTextureId);
+                gl.uniform1i(this.shaders.quad3D.uniforms.texSampler, 0/*0 corresponds to gl.TEXTURE0*/);
+
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
         }
 
         { //render lines
@@ -543,6 +602,13 @@ class Game
         if(this.textblock0) { this.textblock0.render(perspectiveMat, viewMat);}
         if(this.textblock1) { this.textblock1.render(perspectiveMat, viewMat);}
         if(this.textblock2) { this.textblock2.render(perspectiveMat, viewMat);}
+
+        //test pivto locations
+        if(this.textblock_default_pos) { this.textblock_default_pos.render(perspectiveMat, viewMat);}
+        if(this.textblock_center_w) { this.textblock_center_w.render(perspectiveMat, viewMat);}
+        if(this.textblock_center_hw) { this.textblock_center_hw.render(perspectiveMat, viewMat);}
+        if(this.textblock_left) { this.textblock_left.render(perspectiveMat, viewMat);}
+        if(this.textblock_understandalign) {this.textblock_understandalign.render(perspectiveMat, viewMat);}
 
         if(this.bRenderDemoBaselines)
         {
