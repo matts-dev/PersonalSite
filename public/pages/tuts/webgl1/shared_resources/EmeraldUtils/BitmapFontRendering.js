@@ -120,6 +120,16 @@ export class BitmapTextblock3D
 
         this.bCenterHorizontal = false;
         this.bCenterVertical = false;
+        this.localWidth = 0;
+
+        //setup
+        this.calculateLocalWidth();
+    }
+
+    //call this if tweaking any values regarding the font; this is the function resolve any "dirty" state about the bitmap font.
+    refreshState()
+    {
+        this.calculateLocalWidth();
     }
 
     render(projection, view, parentModelMat = mat4.create())
@@ -147,17 +157,18 @@ export class BitmapTextblock3D
 
             //transform bitmap to parent space with pivot correction
             let parentTextblockMat = mat4.create();
-            mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat);
-            mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat);
-            mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
+            // mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat);
+            // mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat);
+            // mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
 
             let glyphPos = vec3.clone(this.xform.pos);
             let x_offset = 0;
             for(let char_idx = 0; char_idx < this.text.length; ++char_idx)
             {
                 let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
-                x_offset += glyph.width;
                 glyphPos[0] = this.xform.pos[0] + x_offset;
+                glyphPos[1] = this.xform.pos[1] + glyph.baselineOffsetY;
+                x_offset += glyph.width; //be sure add width after we've calculated start pos
 
                 let glyphModelMat = mat4.create();
                 mat4.translate(glyphModelMat, glyphModelMat, glyphPos);
@@ -168,6 +179,37 @@ export class BitmapTextblock3D
                 glyph.render(view, projection, glyphModelMat);
             }
         }
+    }
+
+    calculateLocalWidth()
+    {
+        if(this.text)
+        {
+            let width_so_far = 0;
+            
+            //calculate width for pivot matrix
+            for(let char_idx = 0; char_idx < this.text.length; ++char_idx)
+            {
+                let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
+                width_so_far += glyph.width;
+            }
+
+            this.localWidth = width_so_far;
+        }
+        else
+        {
+            this.localWidth = 0;
+        }
+
+    }
+
+    getLocalWidth()
+    {
+        if(!this.localWidth)
+        {
+            this.calculateLocalWidth();
+        }
+        return this.localWidth;
     }
 }
 
@@ -182,7 +224,7 @@ export class GlyphRenderer
      * @param {*} width 
      * @param {*} height 
      */
-    constructor(gl, glyphShader, fontTextureObj, uvPos, width, height)
+    constructor(gl, glyphShader, fontTextureObj, uvPos, width, height, baselineOffsetY=0.0)
     {
         this.gl = gl;
         this.glyphShader = glyphShader;
@@ -190,6 +232,7 @@ export class GlyphRenderer
         this.uvPos = uvPos;
         this.width = width;
         this.height = height;
+        this.baselineOffsetY = baselineOffsetY;
 
         this.buffers = this._createBuffers(gl)
     }
@@ -200,8 +243,7 @@ export class GlyphRenderer
         gl.bindBuffer(gl.ARRAY_BUFFER, posVBO);
 
         // transform this by scale [0.0,0.0,0.0,    1.0,0.0,0.0,    0.0,1.0,0.0,   1.0,1.0,0.0]
-        let aspect = this.width / this.height;
-        let correctedPos = [0.0,0.0,0.0,   aspect,0.0,0.0,    0.0,1,0.0,   aspect, 1,0.0] //just use aspect for width instead of typeing aspect*1
+        let correctedPos = [0.0,0.0,0.0,   this.width,0.0,0.0,    0.0,this.height,0.0,   this.width, this.height,0.0]
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(correctedPos), gl.STATIC_DRAW);
 
         //quad indices
@@ -275,6 +317,7 @@ export class GlyphInstance
  *     there will be some stretching that will need to be accounted for.
  */
 
+ //TODO remove this class? Seems like BitmapFont3d covers all of this?
 export class BitmapFont
 {
     constructor(glContext, textureURL)

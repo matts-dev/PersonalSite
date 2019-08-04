@@ -148,14 +148,28 @@ class Game
             );
         
         this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
-        // this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Grass2.png");
-        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("~");
+        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("|"); //modify this to view your target glyph
+
+        this.textblock0 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "abc", 0, 0, -4);
 
         this.textblock1 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont,
-             "The quick brown fox jumps over a lazy dog. !@#$%^&*()_+=-0987654321`~ <>,./?\\|]}[{;:\"'}]",
-             0, 0, 4);
+             "The quick brown fox jumps over a lazy dog. !@#$%^&*()_+=-0987654321`~ <>,./?\\|]}[{;:\"'}] [a]{b}(d)/g\\|h|",
+             1, 0.95, -6);
+
+        this.textblock2 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont,
+                "THE QUICK BROWN FOX JUMPS OVER A LAZY DOG. !@#$%^&*()_+=-0987654321`~ <>,./?\\|]}[{;:\"'}] [A]{B}(D)/G\\|H|",
+                1, 1, -6);
         
-        this.testGlyphs = ["a","b","c","d","e","f","h","g","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","'","?","\"","!","(","%",")","[","#","]","{","@","}","/","&","\\","<","-","+","÷","=",">","®","©","$",":",";",",",".","*","^","_","|","`","~","ç","â","à","é","è","ê","ë","î","ï","ô","û","ù","ü","-"];
+        this.testGlyphs = ["a","b","c","d","e","f","h","g","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","'","?","\"","!","(","%",")","[","#","]","{","@","}","/","&","\\","<","-","+","÷","=",">","®","©","$",":",";",",",".","*","^","_","|","`","~"," ","ç","â","à","é","è","ê","ë","î","ï","ô","û","ù","ü","-"];
+
+        this.bRenderDemoBaselines = true;
+
+        //camera positions for quick testing
+        // this.camera.position = vec3.fromValues(0.5,1.155,-4); //look at font texture and red bounding boxes
+        // this.camera.position = vec3.fromValues(1.3,1,-5.5); //look at underline text (q)
+        // this.camera.position = vec3.fromValues(1.6,1,-5.5); //look at underline text (y)
+        // this.camera.position = vec3.fromValues(2.1,1,-5.5); //look at underline text (symbols)
+        this.camera.position = vec3.fromValues(2.3,1,-5.5); //look at underline text (brackets)
 
         // end this module specific code
         ////////////////////////////////////////////////////////////////////
@@ -522,12 +536,37 @@ class Game
         {//test glyph renderer
             let modelMat = mat4.create();
             mat4.translate(modelMat, modelMat, vec3.fromValues(0,1.1,-6));
+            mat4.scale(modelMat, modelMat, vec3.fromValues(64,64,64));
             this.testGlyphRenderer.render(viewMat, perspectiveMat, modelMat);
         }
 
-        if(this.textblock1)
+        if(this.textblock0) { this.textblock0.render(perspectiveMat, viewMat);}
+        if(this.textblock1) { this.textblock1.render(perspectiveMat, viewMat);}
+        if(this.textblock2) { this.textblock2.render(perspectiveMat, viewMat);}
+
+        if(this.bRenderDemoBaselines)
         {
-            this.textblock1.render(perspectiveMat, viewMat);
+            if(this.textblock1)
+            {
+                let start = this.textblock1.xform.pos;
+                let totalWidth = this.textblock1.getLocalWidth();
+
+                let end = vec3.clone(start);
+                end[0] += totalWidth;
+
+                this.lineRenderer.renderLine(start, end, vec3.fromValues(1,0,0), viewMat, perspectiveMat);
+            }
+
+            if(this.textblock2)
+            {
+                let start = this.textblock2.xform.pos;
+                let totalWidth = this.textblock2.getLocalWidth();
+
+                let end = vec3.clone(start);
+                end[0] += totalWidth;
+
+                this.lineRenderer.renderLine(start, end, vec3.fromValues(1,0,0), viewMat, perspectiveMat);
+            }
         }
 
         requestAnimationFrame(this.boundGameLoop);

@@ -35,7 +35,7 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["d"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.074, 0.927), 0.0182, 0.02275); 
         this._glyphTable["e"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1215, 0.927), 0.0165, 0.0169); 
         this._glyphTable["f"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1420, 0.927), 0.0128, 0.0234); 
-        this._glyphTable["g"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.157, 0.921), 0.0174, 0.0234); 
+        this._glyphTable["g"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.157, 0.921), 0.0174, 0.0234, -0.007); 
         this._glyphTable["h"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1823, 0.927), 0.0167, 0.0234); 
         this._glyphTable["i"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.205, 0.927), 0.006, 0.0234); 
         this._glyphTable["j"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.213, 0.921), 0.010, 0.0287); 
@@ -44,8 +44,8 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["m"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.263, 0.927), 0.028, 0.017); 
         this._glyphTable["n"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.2985, 0.927), 0.0158, 0.017); 
         this._glyphTable["o"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3205, 0.927), 0.0177, 0.017); 
-        this._glyphTable["p"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3443, 0.921), 0.0175, 0.0235); 
-        this._glyphTable["q"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3667, 0.921), 0.0175, 0.0235); 
+        this._glyphTable["p"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3443, 0.921), 0.0175, 0.0235, -0.006); 
+        this._glyphTable["q"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3667, 0.921), 0.0175, 0.0235, -0.006); 
         this._glyphTable["r"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3922, 0.927), 0.010, 0.017); 
         this._glyphTable["s"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4058, 0.927), 0.014, 0.017); 
         this._glyphTable["t"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.442, 0.927), 0.0115, 0.021); 
@@ -53,8 +53,9 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["v"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.481, 0.927), 0.017, 0.017); 
         this._glyphTable["w"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.501, 0.927), 0.0268, 0.017); 
         this._glyphTable["x"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5307, 0.927), 0.016, 0.017); 
-        this._glyphTable["y"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5485, 0.921), 0.0184, 0.0287); 
+        this._glyphTable["y"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5485, 0.921), 0.0184, 0.0287, -0.006); 
         this._glyphTable["z"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5707, 0.927), 0.014, 0.017); 
+
         this._glyphTable["A"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.01125, 0.966), 0.0227, 0.0215); 
         this._glyphTable["B"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.0395, 0.966), 0.0195, 0.0215); 
         this._glyphTable["C"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.0641, 0.966), 0.0195, 0.02155); 
@@ -71,7 +72,7 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["N"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4065, 0.966), 0.019, 0.0218); 
         this._glyphTable["O"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.432, 0.966), 0.024, 0.0218); 
         this._glyphTable["P"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4625, 0.966), 0.018, 0.0218); 
-        this._glyphTable["Q"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4859, 0.962), 0.024, 0.0260); 
+        this._glyphTable["Q"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4859, 0.962), 0.024, 0.0260, -0.0042); 
         this._glyphTable["R"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.51625, 0.966), 0.018, 0.0218); 
         this._glyphTable["S"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5395, 0.966), 0.0167, 0.0218); 
         this._glyphTable["T"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5817, 0.966), 0.0185, 0.0218); 
@@ -98,21 +99,21 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["?"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.09, 0.771), 0.016, 0.0218); 
         this._glyphTable["\""] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.121, 0.771), 0.0105, 0.0225); 
         this._glyphTable["!"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.137, 0.771), 0.005, 0.0218); 
-        this._glyphTable["("] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.164, 0.765), 0.008, 0.0285);  //drop this like g, and q
+        this._glyphTable["("] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.164, 0.765), 0.008, 0.0285, -0.003);  //dropped
         this._glyphTable["%"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1764, 0.771), 0.024, 0.0218); 
-        this._glyphTable[")"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.204, 0.765), 0.008, 0.0285); //drop this like g, and q
+        this._glyphTable[")"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.204, 0.765), 0.008, 0.0285, -0.003); //dropped
         
-        this._glyphTable["["] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.22, 0.765), 0.008, 0.0285); //drop this like g, and q
+        this._glyphTable["["] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.22, 0.765), 0.008, 0.0285, -0.003); //dropped
         this._glyphTable["#"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.23075, 0.771), 0.021, 0.0218); 
-        this._glyphTable["]"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.255, 0.765), 0.008, 0.0285); //drop this like g, and q
-        this._glyphTable["{"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.269, 0.765), 0.01, 0.0285); //drop this like g, and q
-        this._glyphTable["@"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.2825, 0.765), 0.0295, 0.0285);  //drop this
-        this._glyphTable["}"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3155, 0.765), 0.0105, 0.0285); //drop this like g, and q
+        this._glyphTable["]"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.255, 0.765), 0.008, 0.0285, -0.003);//dropped
+        this._glyphTable["{"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.269, 0.765), 0.01, 0.0285, -0.003); //dropped
+        this._glyphTable["@"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.2825, 0.765), 0.0295, 0.0285,-0.006); //dropped
+        this._glyphTable["}"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3155, 0.765), 0.0105, 0.0285, -0.003); //dropped
 
         //start here
-        this._glyphTable["/"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3288, 0.768), 0.014, 0.029); //slight drop
+        this._glyphTable["/"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3288, 0.768), 0.014, 0.029, -0.003); //slight drop
         this._glyphTable["&"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.343, 0.771), 0.0206, 0.0218); 
-        this._glyphTable["\\"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.365, 0.768), 0.014, 0.029); //slight drop
+        this._glyphTable["\\"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.365, 0.768), 0.014, 0.029, -0.003); //slight drop
         this._glyphTable["<"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.3825, 0.771), 0.015, 0.018); 
         this._glyphTable["-"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4028, 0.771), 0.01, 0.01);         
         this._glyphTable["+"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.4185, 0.771), 0.0145, 0.0181); 
@@ -122,18 +123,20 @@ export class Montserrat_BMF extends BitmapFont
 
         this._glyphTable["®"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.521, 0.771), 0.0227, 0.0218); 
         this._glyphTable["©"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.549, 0.771), 0.0224, 0.0218); 
-        this._glyphTable["$"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5765, 0.767), 0.0168, 0.0295); //drop bottom bar
+        this._glyphTable["$"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5765, 0.767), 0.0168, 0.0295, -0.0035); //dropped
         this._glyphTable[":"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.693, 0.771), 0.005, 0.017); 
-        this._glyphTable[";"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.7035, 0.7674), 0.005, 0.02); //drop tail
-        this._glyphTable[","] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.7135, 0.7674), 0.005, 0.009); //drop tail
+        this._glyphTable[";"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.7035, 0.7674), 0.005, 0.02, -0.0037); //dropped
+        this._glyphTable[","] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.7135, 0.7674), 0.005, 0.009, -0.0045); //droped
         this._glyphTable["."] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.724, 0.771), 0.005, 0.004); 
         this._glyphTable["*"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.733, 0.771), 0.012, 0.023); 
 
-        this._glyphTable["^"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.424, 0.832), 0.011, 0.006); //requires manual raising
+        this._glyphTable["^"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.424, 0.832), 0.011, 0.006, 0.018); //raised
         this._glyphTable["_"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5817, 0.9852), 0.0185, 0.0218); 
-        this._glyphTable["|"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.589, 0.966), 0.004, 0.0186); 
-        this._glyphTable["`"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.059, 0.944), 0.009, 0.006); //flip?
-        this._glyphTable["~"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5907, 0.944), 0.012, 0.006); 
+        this._glyphTable["|"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.2595, 0.765), 0.002, 0.0285, -0.003); //drop like []
+        this._glyphTable["`"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.059, 0.944), 0.009, 0.006, 0.02); //flip?
+        this._glyphTable["~"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5907, 0.944), 0.012, 0.006, 0.01); //raised
+        
+        this._glyphTable[" "] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5907, 0.954), 0.012, 0.006); 
 
         //numeric row + shift
         // this._glyphTable["!"] = null;
