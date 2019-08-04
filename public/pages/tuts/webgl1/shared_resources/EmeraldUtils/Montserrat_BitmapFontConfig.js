@@ -138,47 +138,6 @@ export class Montserrat_BMF extends BitmapFont
         
         this._glyphTable[" "] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.5907, 0.954), 0.012, 0.006); 
 
-        //numeric row + shift
-        // this._glyphTable["!"] = null;
-        // this._glyphTable["@"] = null;
-        // this._glyphTable["#"] = null;
-        // this._glyphTable["$"] = null;
-        // this._glyphTable["%"] = null;
-        // this._glyphTable["^"] = null;
-        // this._glyphTable["&"] = null;
-        // this._glyphTable["*"] = null;
-        // this._glyphTable["("] = null;
-        // this._glyphTable[")"] = null;
-        // this._glyphTable["_"] = null;
-        // this._glyphTable["+"] = null;
-        
-        // //symbols within keyboard letters
-        // this._glyphTable[";"] = null;
-        // this._glyphTable[":"] = null;
-        // this._glyphTable["'"] = null;
-        // this._glyphTable["\""] = null;
-        // this._glyphTable["["] = null;
-        // this._glyphTable["{"] = null;
-        // this._glyphTable["]"] = null;
-        // this._glyphTable["}"] = null;
-        // this._glyphTable["/"] = null;
-        // this._glyphTable["?"] = null;
-        // this._glyphTable["."] = null;
-        // this._glyphTable[">"] = null;
-        // this._glyphTable[","] = null;
-        // this._glyphTable["<"] = null;
-        // this._glyphTable["\\"] = null;
-        // this._glyphTable["|"] =  null;
-        // this._glyphTable["`"] =  null; //backtick (beside 1)
-        // this._glyphTable["~"] =  null;
-
-        // //mathematical symbols
-        // this._glyphTable["÷"] = null;
-
-        // //symbols
-        // this._glyphTable["©"] =  null;
-        // this._glyphTable["®"] =  null;
-
         //accents
         this._glyphTable["ç"] = null;
         this._glyphTable["â"] = null;
@@ -195,6 +154,7 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["ü"] = null;
         //there exists more accent than these
 
+        //make glyphs self-aware of the charactesr the glyph represents.
         for(let key in this._glyphTable)
         {
             let glyph = this._glyphTable[key]
