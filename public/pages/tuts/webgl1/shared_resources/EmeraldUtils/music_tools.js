@@ -17,6 +17,10 @@ class PianoKey
         this.baseColor = isWhiteKey ? vec3.fromValues(1,1,1) : vec3.fromValues(0,0,0);
         this.colorDecaySpeedSec = 4.0; //over range [0, 1]; 1 being max click color
 
+        this.scaleNote = null;
+        this.scaleColor = vec3.fromValues(0,1,0);
+        this.scaleNoteColorPerc = 0.5;
+
         this.blendColorBuffer = vec3.clone(this.baseColor);
         this.pressColorAlpha = 0;
         this.pressColor = vec3.fromValues(1, 0.56, 0.058);
@@ -29,14 +33,18 @@ class PianoKey
 
     generateSound(soundPrefixURL)
     {
-        // this.sound = new EmeraldUtils.Sound("../Sounds/PianoKeySounds/C3.wav");
         this.sound = new EmeraldUtils.Sound( soundPrefixURL + this.keyString + this.octaveString + ".wav");
-        // shared_resources\Sounds\PianoKeySounds
     }
 
     getColor()
     {
         return this.blendColorBuffer;
+    }
+
+    setScaleNote(scaleNote)
+    {
+        this.scaleNote = scaleNote;
+        this.updateColor(0.0);
     }
 
     press()
@@ -45,22 +53,46 @@ class PianoKey
         this.sound.play();
     }
 
+    updateColor(dt_sec)
+    {
+        //load base color into blending buffer for manipulation
+        this.blendColorBuffer[0] = this.baseColor[0];
+        this.blendColorBuffer[1] = this.baseColor[1];
+        this.blendColorBuffer[2] = this.baseColor[2];
+
+        //blend scales
+        if(this.scaleNote)
+        {
+            let percBase = 1 - this.scaleNoteColorPerc;
+            this.blendColorBuffer[0] = this.scaleNoteColorPerc * this.scaleColor[0] + percBase * this.baseColor[0];
+            this.blendColorBuffer[1] = this.scaleNoteColorPerc * this.scaleColor[1] + percBase * this.baseColor[1];
+            this.blendColorBuffer[2] = this.scaleNoteColorPerc * this.scaleColor[2] + percBase * this.baseColor[2];
+        }
+
+        //blend clicks
+        this.pressColorAlpha -= dt_sec * this.colorDecaySpeedSec;
+        this.pressColorAlpha = EmeraldUtils.clamp(this.pressColorAlpha, 0, 1);
+
+        let baseAlpha = 1 - this.pressColorAlpha;
+        this.blendColorBuffer[0] = this.blendColorBuffer[0] * baseAlpha + this.pressColor[0] * this.pressColorAlpha; 
+        this.blendColorBuffer[1] = this.blendColorBuffer[1] * baseAlpha + this.pressColor[1] * this.pressColorAlpha; 
+        this.blendColorBuffer[2] = this.blendColorBuffer[2] * baseAlpha + this.pressColor[2] * this.pressColorAlpha; 
+    }
+
     tick(dt_sec)
     {
         if(this.pressColorAlpha > 0.0)
         {
-            this.pressColorAlpha -= dt_sec * this.colorDecaySpeedSec;
-            this.pressColorAlpha = EmeraldUtils.clamp(this.pressColorAlpha, 0, 1);
-
-            let baseAlpha = 1 - this.pressColorAlpha;
-            this.blendColorBuffer[0] = this.baseColor[0] * baseAlpha + this.pressColor[0] * this.pressColorAlpha; 
-            this.blendColorBuffer[1] = this.baseColor[1] * baseAlpha + this.pressColor[1] * this.pressColorAlpha; 
-            this.blendColorBuffer[2] = this.baseColor[2] * baseAlpha + this.pressColor[2] * this.pressColorAlpha; 
+            this.updateColor(dt_sec);
         }
     }
 }
 
-let keyNames = [
+export function majorScaleSteps() {return [2,2,1,2,2,2,1]; }
+export function minorScaleSteps() { return [2,1,2,2,1,2,2]; }
+export function harmonicMinorScaleSteps() {return [ 2,1,2,2,1,3,2 ];}
+
+let noteNames = [
     "C",
     "CSHARP",
     "D",
@@ -74,6 +106,103 @@ let keyNames = [
     "ASHARP",
     "B",
 ];
+
+let noteToIdxMap = {
+    "C" : 0,
+    "CSHARP": 1,
+    "D":2,
+    "DSHARP":3,
+    "E":4,
+    "F":5,
+    "FSHARP":6,
+    "G":7,
+    "GSHARP":8,
+    "A":9,
+    "ASHARP":10,
+    "B":11,
+};
+
+function generateScaleList(startNoteName, scaleSteps)
+{
+    let scale = [startNoteName];
+    
+    let scaleIdx = 0;
+    let step = noteToIdxMap[startNoteName];
+    for (const toneStep of scaleSteps)
+    {
+        step = step + toneStep;
+        step = step % noteNames.length; //wrap around; #TODO make sure javascript does int modulus
+        scale.push(noteNames[step]);
+        scaleIdx = scaleIdx + 1;
+    }
+
+    return scale;
+}
+
+export function demoScaleGenerator()
+{
+    let demoScale = generateScaleList("C", minorScaleSteps);
+    for(const note of demoScale)
+    {
+        console.log(note);
+    }
+}
+
+export class ScaleMemberNote
+{
+    constructor(noteName, interval, semitonesFromRoot)
+    {
+        this.noteName = noteName;
+        this.interval = interval;
+        this.semitonesFromRoot = semitonesFromRoot;
+    }
+
+    isRoot() {return this.semitonesFromRoot === 0;}
+}
+
+export class Scale 
+{
+    /**
+     * Construct a representation of a scale.
+     *  @param startNoteName see noteNames list 
+     * */
+    constructor(startNoteName, scaleSteps)
+    {
+        this.notes = {};
+        this.notes[startNoteName] = new ScaleMemberNote(startNoteName, 0, 0);
+        this.intervals = [this.notes[startNoteName]];
+
+        let semitones = 0;
+        let step = noteToIdxMap[startNoteName];
+        for (const toneStep of scaleSteps)
+        {
+            semitones = semitones + toneStep;
+            step = step + toneStep;
+            step = step % noteNames.length; //wrap around; 
+
+            let noteName = noteNames[step];
+
+            if(!(noteName in this.notes)) //do not add octave root
+            {
+                this.intervals.push(new ScaleMemberNote(noteName, this.intervals.length, semitones));
+                this.notes[noteName] = this.intervals[this.intervals.length - 1];
+            }
+        }   
+    }
+}
+
+export function demoScaleObject(startNoteName, scaleSteps)
+{
+    let scaleObj = new Scale(startNoteName, scaleSteps);
+
+    for(const noteName in scaleObj.notes)
+    {  
+        let note = scaleObj.notes[noteName];
+        console.log(note.noteName, "\tinterval: ", note.interval, "\tsemitone: ", note.semitonesFromRoot);
+    }
+
+    return scaleObj
+}
 
 export class Piano
 {
@@ -178,7 +307,7 @@ export class Piano
             }
         };
 
-
+        this.keyToOctaves = {};
         this.keys = [];
 
         let whiteKeyOffset = this.keyData.whiteKey.width + this.keyData.spacing;
@@ -195,8 +324,8 @@ export class Piano
             for (const keyName in keyLocations) 
             {
                 let key = keyLocations[keyName];
-                let keyString = keyNames[keyIdx];
-                keyIdx = (keyIdx + 1) % keyNames.length
+                let keyString = noteNames[keyIdx];
+                keyIdx = (keyIdx + 1) % noteNames.length
 
                 keyOffset[0] = whiteKeyOffset * key.whiteKeyOffsets;
                 keyOffset[1] = 0;
@@ -223,8 +352,12 @@ export class Piano
                     keyXform.scale[1] = this.keyData.blackKey.height;
                 }
                 
-                //TODO pass key's octave to ctor and have key generate sound file name
                 this.keys.push(new PianoKey(keyXform, key.isWhiteKey, this.soundPrefixLocation, keyString, octave + baseOctave));
+                
+                if(keyString in this.keyToOctaves)
+                    this.keyToOctaves[keyString].push(this.keys[this.keys.length-1]); //append to list
+                else
+                    this.keyToOctaves[keyString] = [ this.keys[this.keys.length-1] ]; //start list
             }
         }
     }
@@ -238,6 +371,29 @@ export class Piano
         mat4.mul(baseXform, baseXform, centerXform);
 
         return baseXform;
+    }
+
+    applyScale(scale)
+    {
+        //clear old scale data
+        this.scale = null;
+        for(const key of this.keys)
+        {
+            key.setScaleNote(null);
+        }
+
+        //add new scale data
+        this.scale = scale;
+        for(const noteName in scale.notes)
+        {
+            let scaleNote = scale.notes[noteName];
+
+            let keyOctaves = this.keyToOctaves[scaleNote.noteName];
+            for(let key of keyOctaves)
+            {
+                key.setScaleNote(scaleNote);
+            }
+        }
     }
     
     /* parameters are vec3s in world space */
@@ -270,7 +426,6 @@ export class Piano
             }
         }
 
-        //TODO have key object able to play itself?
         if(hitKey)
         {
             hitKey.press();
@@ -299,4 +454,5 @@ export class Piano
             key.tick(dt_sec);
         }
     }
+
 }

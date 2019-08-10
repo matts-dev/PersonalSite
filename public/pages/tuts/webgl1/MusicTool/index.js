@@ -6,7 +6,8 @@ import {vec2, vec3, vec4, mat4} from "../shared_resources/gl-matrix_esm/index.js
 import {RenderBox3D, GlyphRenderer} from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
 import * as BMF from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
 import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_BitmapFontConfig.js";
-import { Piano } from "../shared_resources/EmeraldUtils/music_tools.js";
+import { Piano, Scale } from "../shared_resources/EmeraldUtils/music_tools.js";
+import * as Music from "../shared_resources/EmeraldUtils/music_tools.js";
 import {isSafari} from "../shared_resources/EmeraldUtils/browser_key_codes.js";
 
 
@@ -46,13 +47,14 @@ class Game
         this.coloredCube = coloredCubeFactory(this.gl);
         this.camera = new Camera(vec3.fromValues(0,0,1), vec3.fromValues(0,0,-1));
     
-        //todo create a list of pianos?
+        //create pianos
         this.piano = new Piano(this.gl, "../shared_resources/Sounds/PianoKeySounds/");
-        // this.piano.xform.pos[0] = 3;
-        // this.piano.xform.pos[1] = 3;
         this.piano.xform.scale[0] = 0.75;
         this.piano.xform.scale[1] = 0.75;
 
+        //set up scale
+        this.startScale = new Scale("DSHARP", Music.minorScaleSteps());
+        this.piano.applyScale(this.startScale);
 
         this.lineRenderer = new EmeraldUtils.LineRenderer(this.gl);
 
@@ -235,19 +237,19 @@ class Game
 
     handleTouchEnd(event)
     {
-        this.piano.keys[7].press();
+        // this.piano.keys[7].press();
     }
     handleTouchStart(event)
     {
-        this.piano.keys[0].press();
+        // this.piano.keys[0].press();
     }
     handleTouchMove(event)
     {
-        this.piano.keys[3].press();
+        // this.piano.keys[3].press();
     }
     handleTouchCancel(event)
     {
-        this.piano.keys[1].press();
+        // this.piano.keys[1].press();
     }
 
 
