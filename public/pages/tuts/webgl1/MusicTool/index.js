@@ -10,18 +10,14 @@ import { Piano, Scale } from "../shared_resources/EmeraldUtils/music_tools.js";
 import * as Music from "../shared_resources/EmeraldUtils/music_tools.js";
 import {isSafari} from "../shared_resources/EmeraldUtils/browser_key_codes.js";
 
-
-
 //////////////////////////////////////////////////////
 //module level statics
 //////////////////////////////////////////////////////
 var game = null;
 
-
 //////////////////////////////////////////////////////
 // Shaders
 //////////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////////
 // Base Game Class
@@ -119,6 +115,16 @@ class Game
             EmeraldUtils.configureMultiBrowserPointerLock(this.glCanvas);
             EmeraldUtils.addEventListener_pointerlockchange(this.handlePointerLockChange.bind(this));
         }
+
+        window.addEventListener("contextmenu", this.handleContextMenuRequested.bind(this));
+    }
+
+    handleContextMenuRequested(e)
+    {
+        // this can be used to prevent the right click menu from popping up
+        // but calling e.preventDefault(); in touch events prevents upcoming mouses
+        // it appears that if touch events cancel the right-click mouse event, then
+        // no context menu will appear. Hence no longer needing to handle it here.
     }
 
     handleKeyDown(event)
@@ -172,6 +178,11 @@ class Game
 
     handleMouseDown(e)
     {
+        this.notifyInputDownEvent(e);
+    }
+
+    notifyInputDownEvent(e)
+    {
         // canvas click will only happen when click is released
         let elementClicked = document.elementFromPoint(e.clientX, e.clientY);
         if(elementClicked)
@@ -220,6 +231,19 @@ class Game
                     this.rayEnd = rayEnd;
                 }
             }
+
+            //immediately do ray test; don't wait as we may have chords
+            if(this.rayEnd && this.rayStart)
+            {
+                let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
+                vec3.normalize(rayDir, rayDir);
+                let clickedKey = this.piano.clickTest(this.rayStart, rayDir);
+                if(clickedKey)
+                {
+                    this.rayEnd = null;
+                    this.rayStart = null;
+                }
+            }
         }
     }
 
@@ -237,19 +261,32 @@ class Game
 
     handleTouchEnd(event)
     {
-        // this.piano.keys[7].press();
+        event.preventDefault(); //stop mouse event
+
+        for(const touch of event.changedTouches)
+        {
+            // console.log("released touch", touch.identifier);
+        }
     }
+
     handleTouchStart(event)
     {
-        // this.piano.keys[0].press();
+        event.preventDefault(); //stop mouse event
+
+        for(const touch of event.changedTouches)
+        {   
+            // console.log("added touch", touch.identifier);
+            this.notifyInputDownEvent(touch);
+        }
+
     }
     handleTouchMove(event)
     {
-        // this.piano.keys[3].press();
+        event.preventDefault(); //stop mouse event
     }
     handleTouchCancel(event)
     {
-        // this.piano.keys[1].press();
+        event.preventDefault(); //stop mouse event
     }
 
 
@@ -369,18 +406,6 @@ class Game
             this.coloredCube.bindBuffers();
             this.coloredCube.updateShader(coloredCubeModel, viewMat, perspectiveMat, cubeColor);
             this.coloredCube.render();
-        }
-
-        if(this.rayEnd && this.rayStart)
-        {
-            let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
-            vec3.normalize(rayDir, rayDir);
-            let clickedKey = this.piano.clickTest(this.rayStart, rayDir);
-            if(clickedKey)
-            {
-                this.rayEnd = null;
-                this.rayStart = null;
-            }
         }
 
         //render piano
