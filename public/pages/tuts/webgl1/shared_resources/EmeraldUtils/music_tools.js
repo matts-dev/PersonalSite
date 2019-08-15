@@ -6,87 +6,11 @@ import * as key from "../EmeraldUtils/browser_key_codes.js";
 import * as EmeraldUtils from "./emerald-opengl-utils.js"
 import {Transform} from "./emerald-opengl-utils.js"
 import { coloredCubeFactory, coloredCubeFactory_pivoted} from "./emerald_easy_shapes.js";
+import {RadialPicker, RadialButton} from "./radial_picker.js";
 
 
-class PianoKey 
-{
-    constructor(keyXform, isWhiteKey, soundPrefixLocation, keyString, octaveIdx)
-    {
-        this.xform = keyXform;
-        this.isWhiteKey = isWhiteKey;
-        this.baseColor = isWhiteKey ? vec3.fromValues(1,1,1) : vec3.fromValues(0,0,0);
-        this.colorDecaySpeedSec = 4.0; //over range [0, 1]; 1 being max click color
 
-        this.scaleNote = null;
-        this.scaleColor = vec3.fromValues(0,1,0);
-        this.scaleNoteColorPerc = 0.5;
 
-        this.blendColorBuffer = vec3.clone(this.baseColor);
-        this.pressColorAlpha = 0;
-        this.pressColor = vec3.fromValues(1, 0.56, 0.058);
-
-        this.file_path_prefix = "";
-        this.keyString = keyString;
-        this.octaveString = octaveIdx.toString();
-        this.generateSound(soundPrefixLocation);
-    }
-
-    generateSound(soundPrefixURL)
-    {
-        this.sound = new EmeraldUtils.Sound( soundPrefixURL + this.keyString + this.octaveString + ".wav");
-    }
-
-    getColor()
-    {
-        return this.blendColorBuffer;
-    }
-
-    setScaleNote(scaleNote)
-    {
-        this.scaleNote = scaleNote;
-        this.updateColor(0.0);
-    }
-
-    press()
-    {
-        this.pressColorAlpha = 1.0;
-        this.sound.play();
-    }
-
-    updateColor(dt_sec)
-    {
-        //load base color into blending buffer for manipulation
-        this.blendColorBuffer[0] = this.baseColor[0];
-        this.blendColorBuffer[1] = this.baseColor[1];
-        this.blendColorBuffer[2] = this.baseColor[2];
-
-        //blend scales
-        if(this.scaleNote)
-        {
-            let percBase = 1 - this.scaleNoteColorPerc;
-            this.blendColorBuffer[0] = this.scaleNoteColorPerc * this.scaleColor[0] + percBase * this.baseColor[0];
-            this.blendColorBuffer[1] = this.scaleNoteColorPerc * this.scaleColor[1] + percBase * this.baseColor[1];
-            this.blendColorBuffer[2] = this.scaleNoteColorPerc * this.scaleColor[2] + percBase * this.baseColor[2];
-        }
-
-        //blend clicks
-        this.pressColorAlpha -= dt_sec * this.colorDecaySpeedSec;
-        this.pressColorAlpha = EmeraldUtils.clamp(this.pressColorAlpha, 0, 1);
-
-        let baseAlpha = 1 - this.pressColorAlpha;
-        this.blendColorBuffer[0] = this.blendColorBuffer[0] * baseAlpha + this.pressColor[0] * this.pressColorAlpha; 
-        this.blendColorBuffer[1] = this.blendColorBuffer[1] * baseAlpha + this.pressColor[1] * this.pressColorAlpha; 
-        this.blendColorBuffer[2] = this.blendColorBuffer[2] * baseAlpha + this.pressColor[2] * this.pressColorAlpha; 
-    }
-
-    tick(dt_sec)
-    {
-        if(this.pressColorAlpha > 0.0)
-        {
-            this.updateColor(dt_sec);
-        }
-    }
-}
 
 export function majorScaleSteps() {return [2,2,1,2,2,2,1]; }
 export function minorScaleSteps() { return [2,1,2,2,1,2,2]; }
@@ -202,6 +126,148 @@ export function demoScaleObject(startNoteName, scaleSteps)
     }
 
     return scaleObj
+}
+
+export class ScaleMatcher 
+{
+    constructor(currentScaleObj = null)
+    {
+        this.scaleObj = currentScaleObj;            
+        this.allowExactMatch = false;
+        this.targetScaleSteps = minorScaleSteps();
+        this.minimumMatchingNotes = 3;
+    }
+
+    findSimilar()
+    {
+        //check invariants
+        if(!this.scaleObj) { return null; }
+
+        //generate all scales
+        this.keys = [];
+        for (const key of noteNames)
+        {
+            this.keys.push(new Scale(key, this.targetScaleSteps));
+        }
+
+        //filter based on search criteria
+        this.filtered = [];
+        for(const scale of this.keys)
+        {
+            let noteMatches = []
+            let scaleNoteMatches = 0;
+            for(const noteName in scale.notes)
+            {
+                if(noteName in this.scaleObj.notes)
+                {
+                    noteMatches.push(noteName);
+                }
+            }
+
+            if(noteMatches.length >= this.minimumMatchingNotes)
+            {
+                this.filtered.push( {scale: scale, noteMatches: noteMatches});
+            }
+        }
+        this.filtered.sort(function(a, b) {a.noteMatches.length - b.noteMatches.length});
+
+        return this.filtered;
+    }
+}
+
+export function demoScaleMatcher()
+{
+    console.log("Demo scale matcher");
+    let scaleObj = new Scale("DSHARP", minorScaleSteps());
+
+    let scaleMatcher = new ScaleMatcher(scaleObj);
+
+    let matches = scaleMatcher.findSimilar();
+    for(const match of matches)
+    {
+        console.log(match);
+    }
+}
+// demoScaleMatcher();
+
+class PianoKey 
+{
+    constructor(keyXform, isWhiteKey, soundPrefixLocation, keyString, octaveIdx)
+    {
+        this.xform = keyXform;
+        this.isWhiteKey = isWhiteKey;
+        this.baseColor = isWhiteKey ? vec3.fromValues(1,1,1) : vec3.fromValues(0,0,0);
+        this.colorDecaySpeedSec = 4.0; //over range [0, 1]; 1 being max click color
+
+        this.scaleNote = null;
+        this.scaleColor = vec3.fromValues(0,1,0);
+        this.scaleNoteColorPerc = 0.5;
+
+        this.blendColorBuffer = vec3.clone(this.baseColor);
+        this.pressColorAlpha = 0;
+        this.pressColor = vec3.fromValues(1, 0.56, 0.058);
+
+        this.file_path_prefix = "";
+        this.keyString = keyString;
+        this.octaveString = octaveIdx.toString();
+        this.generateSound(soundPrefixLocation);
+    }
+
+    generateSound(soundPrefixURL)
+    {
+        this.sound = new EmeraldUtils.Sound( soundPrefixURL + this.keyString + this.octaveString + ".wav");
+    }
+
+    getColor()
+    {
+        return this.blendColorBuffer;
+    }
+
+    setScaleNote(scaleNote)
+    {
+        this.scaleNote = scaleNote;
+        this.updateColor(0.0);
+    }
+
+    press()
+    {
+        this.pressColorAlpha = 1.0;
+        this.sound.play();
+    }
+
+    updateColor(dt_sec)
+    {
+        //load base color into blending buffer for manipulation
+        this.blendColorBuffer[0] = this.baseColor[0];
+        this.blendColorBuffer[1] = this.baseColor[1];
+        this.blendColorBuffer[2] = this.baseColor[2];
+
+        //blend scales
+        if(this.scaleNote)
+        {
+            let percBase = 1 - this.scaleNoteColorPerc;
+            this.blendColorBuffer[0] = this.scaleNoteColorPerc * this.scaleColor[0] + percBase * this.baseColor[0];
+            this.blendColorBuffer[1] = this.scaleNoteColorPerc * this.scaleColor[1] + percBase * this.baseColor[1];
+            this.blendColorBuffer[2] = this.scaleNoteColorPerc * this.scaleColor[2] + percBase * this.baseColor[2];
+        }
+
+        //blend clicks
+        this.pressColorAlpha -= dt_sec * this.colorDecaySpeedSec;
+        this.pressColorAlpha = EmeraldUtils.clamp(this.pressColorAlpha, 0, 1);
+
+        let baseAlpha = 1 - this.pressColorAlpha;
+        this.blendColorBuffer[0] = this.blendColorBuffer[0] * baseAlpha + this.pressColor[0] * this.pressColorAlpha; 
+        this.blendColorBuffer[1] = this.blendColorBuffer[1] * baseAlpha + this.pressColor[1] * this.pressColorAlpha; 
+        this.blendColorBuffer[2] = this.blendColorBuffer[2] * baseAlpha + this.pressColor[2] * this.pressColorAlpha; 
+    }
+
+    tick(dt_sec)
+    {
+        if(this.pressColorAlpha > 0.0)
+        {
+            this.updateColor(dt_sec);
+        }
+    }
 }
 
 export class Piano

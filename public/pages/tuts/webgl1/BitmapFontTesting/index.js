@@ -148,7 +148,7 @@ class Game
             );
         
         this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
-        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("m"); //modify this to view your target glyph
+        this.testGlyphRenderer = this.bitmapFont.getGlyphFor("b"); //modify this to view your target glyph
 
         this.textblock0 = new BMF.BitmapTextblock3D(this.gl, this.bitmapFont, "abc", 0, 0, -4);
 

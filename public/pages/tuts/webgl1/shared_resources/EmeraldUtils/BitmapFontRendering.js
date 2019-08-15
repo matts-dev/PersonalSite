@@ -139,6 +139,7 @@ export class BitmapTextblock3D
         this.xform = new Transform();
         this.xform.pos = vec3.fromValues(x, y, z); 
         this.xform.scale = vec3.fromValues(1,1,1);
+        this.parentModelMat = null;
 
         this.hAlignment = HAlignment.RIGHT;
         this.vAlignment = VAlignment.BOTTOM;
@@ -158,7 +159,7 @@ export class BitmapTextblock3D
         this.calculateLocalWidth();
     }
 
-    render(projection, view, parentModelMat = mat4.create())
+    render(projection, view)
     {
         //this isn't the fastest text renderer as it renders each glyph separating rather than
         //caching them within a texture and rendering that texture each time.
@@ -172,8 +173,6 @@ export class BitmapTextblock3D
                 let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
                 width_so_far += glyph.width;
             }
-
-            let textBlockModelMat = this.xform.toMat4(mat4.create());
 
             let sizeReferenceGlyph = this.bitMapFont.getGlyphFor("A");
 
@@ -194,26 +193,31 @@ export class BitmapTextblock3D
             pivotPos[1] = sizeReferenceGlyph.height * vAlignFactor;
             mat4.translate(pivotMatrix, pivotMatrix, pivotPos);
 
-            //transform bitmap to parent space with pivot correction
-            let parentTextblockMat = mat4.create();
-            // mat4.mul(parentTextblockMat, parentTextblockMat, parentModelMat); //TODO
-            // mat4.mul(parentTextblockMat, parentTextblockMat, textBlockModelMat); //TODO
-            mat4.mul(parentTextblockMat, parentTextblockMat, pivotMatrix);
+            let sceneModelMat = mat4.create();
+            if(this.parentModelMat)
+            {
+                mat4.mul(sceneModelMat, parentXformMat, sceneModelMat); 
+            }
+            let textBlockModelMat = this.xform.toMat4(mat4.create());
+            mat4.mul(sceneModelMat, sceneModelMat, textBlockModelMat);
 
-            let glyphPos = vec3.clone(this.xform.pos);
+            //transform bitmap to parent space with pivot correction
+            mat4.mul(sceneModelMat, sceneModelMat, pivotMatrix);
+
+            let glyphPos = vec3.fromValues(0,0,0);
             let x_offset = 0;
             for(let char_idx = 0; char_idx < this.text.length; ++char_idx)
             {
                 let glyph = this.bitMapFont.getGlyphFor(this.text.charAt(char_idx));
-                glyphPos[0] = this.xform.pos[0] + x_offset;
-                glyphPos[1] = this.xform.pos[1] + glyph.baselineOffsetY;
+                glyphPos[0] = x_offset;
+                glyphPos[1] = glyph.baselineOffsetY;
                 x_offset += glyph.width; //be sure add width after we've calculated start pos
 
                 let glyphModelMat = mat4.create();
                 mat4.translate(glyphModelMat, glyphModelMat, glyphPos);
 
                 //transform bitmap to parent space with pivot correction
-                mat4.mul(glyphModelMat, parentTextblockMat, glyphModelMat);
+                mat4.mul(glyphModelMat, sceneModelMat, glyphModelMat);
 
                 glyph.render(view, projection, glyphModelMat);
             }
@@ -312,7 +316,7 @@ export class GlyphRenderer
 
     render(view, projection, model)
     {
-        //TODO support color override via uniform
+        //#TODO support color override via uniform
         let gl = this.gl;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.posVBO);
@@ -326,7 +330,7 @@ export class GlyphRenderer
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.ebo);
         
-        // //generic matrices
+        //generic matrices
         gl.useProgram(this.glyphShader.program);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.fontTextureObj.glTextureId);

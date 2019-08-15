@@ -112,7 +112,7 @@ export class UnitCube3D{
         this.gl.uniform1i(this.shader.uniforms[shaderUniformName], GL_TEXTURE_NUM - this.gl.TEXTURE0/*0 corresponds to gl.TEXTURE0*/);
     }
 
-    /* This method assumes you have aquired this cube's shader and configured its uniforms*/
+    /* This method assumes you have aquired this cube's shader and configured its uniforms and bound buffers*/
     render()
     {
         let gl = this.gl;
