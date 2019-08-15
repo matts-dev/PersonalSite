@@ -934,7 +934,7 @@ export class Sound
     loadedAudio()
     {
         this.bLoaded = true;
-        console.log("Loaded sound file ", this.url);
+        //console.log("Loaded sound file ", this.url);
     }
 
     play() 

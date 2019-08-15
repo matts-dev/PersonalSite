@@ -30,7 +30,7 @@ export class Montserrat_BMF extends BitmapFont
 
         //this method should only ever be called once
         this._glyphTable["a"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.7835, 0.966), 0.0155, 0.0169); 
-        this._glyphTable["b"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.806, 0.966), 0.0182, 0.02275); 
+        this._glyphTable["b"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.806, 0.966), 0.018, 0.02275); 
         this._glyphTable["c"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.0122, 0.927), 0.0165, 0.0169); 
         this._glyphTable["d"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.074, 0.927), 0.0182, 0.02275); 
         this._glyphTable["e"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1215, 0.927), 0.0165, 0.0169); 
@@ -38,7 +38,7 @@ export class Montserrat_BMF extends BitmapFont
         this._glyphTable["g"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.157, 0.921), 0.0174, 0.0234, -0.007); 
         this._glyphTable["h"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.1823, 0.927), 0.0167, 0.0234); 
         this._glyphTable["i"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.205, 0.927), 0.006, 0.0234); 
-        this._glyphTable["j"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.213, 0.921), 0.010, 0.0287); 
+        this._glyphTable["j"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.213, 0.921), 0.010, 0.0287, -0.006); 
         this._glyphTable["k"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.230, 0.927), 0.0167, 0.0230); 
         this._glyphTable["l"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.2515, 0.927), 0.004, 0.023); 
         this._glyphTable["m"] = new GlyphRenderer(this.gl, this.shader, this.fontTexture, vec3.fromValues(0.263, 0.927), 0.028, 0.017); 

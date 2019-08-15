@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "type": "chrome",
             "request": "launch",
@@ -56,5 +57,15 @@
             "url":"http://127.0.0.1:5500/public/pages/tuts/webgl1/MusicTool/index.html",
             "webRoot": "${workspaceFolder}"
         },
+
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name": "Debug Tests Folder",
+            "url":"http://127.0.0.1:5500/public/pages/tuts/webgl1/Tests/test_scene_node.html",
+            "webRoot": "${workspaceFolder}"
+        },
+
+        
     ]
 }
