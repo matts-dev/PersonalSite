@@ -30,7 +30,7 @@ class DemoSceneNode extends SceneNode
 
     render(projectionMat, viewMat)
     {
-        let modelMat = this.getWorldXform();
+        let modelMat = this.getWorldMat();
         this.cube.updateShader(modelMat, viewMat, projectionMat, this.color);
         this.cube.bindBuffers();
         this.cube.render(this.gl);
