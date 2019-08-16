@@ -958,10 +958,62 @@ export class Sound
 // Software Engineering Designs
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Modeled after C# delegates; safari may not support extended EventTarget interface 
- * https://developer.mozilla.org/en-US/docs/Web/API/EventTarget for simplistic implementation for safari if that is case
+/** Modeled after C# delegates;
+ * Safari does not support extended EventTarget interface. 
+ * https://developer.mozilla.org/en-US/docs/Web/API/EventTarget provides a simplistic implementation for safari and IE
+ * Implementation of event target below is a modified version of what was provided by mozilla (changed to es6 class syntax)
 */
-export class Delegate extends EventTarget
+
+/** Provided because ATIW safari/IE/IOSSafari do not support EventTarget constructor; this is mozilla's simple implementation*/
+class EventTarget_Impl 
+{
+    constructor()
+    {
+        this.listeners = {};
+    }
+
+    addEventListener(type, callback) 
+    {
+        if (!(type in this.listeners)) 
+        {
+            this.listeners[type] = [];
+        }
+        this.listeners[type].push(callback);
+    }
+
+    removeEventListener(type, callback)
+    {
+        if (!(type in this.listeners)) 
+        {
+            return;
+        }
+        var stack = this.listeners[type];
+        for (var i = 0, l = stack.length; i < l; i++) 
+        {
+            if (stack[i] === callback)
+            {
+                stack.splice(i, 1);
+                return;
+            }
+        }
+    }
+
+    dispatchEvent(event)
+    {
+        if (!(event.type in this.listeners)) 
+        {
+            return true;
+        }
+        var stack = this.listeners[event.type].slice();
+        for (var i = 0, l = stack.length; i < l; i++)
+        {
+            stack[i].call(this, event);
+        }
+        return !event.defaultPrevented;
+    }
+}
+
+export class Delegate extends EventTarget_Impl
 {
     constructor()
     {
