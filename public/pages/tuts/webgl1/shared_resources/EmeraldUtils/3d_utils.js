@@ -9,17 +9,20 @@ export class SceneNode
 {
     constructor(parentNode)
     {
-        this.parentNode = parentNode;
-        this.bDirty = false;
+        this._bDirty = false;
 
-        //#todo rename this and matrices so xform is the class, and rest are "mat" for matrix; it's unclear from names which is mat and which is class Transform
         this._localXform = new Utils.Transform();
 
         //#todo add _score to implemenation specific fields; like below
-        this.cached_worldPos = vec4.create();
-        this.cachedWorldXform = mat4.create();
-        this.cachedLocalXform = mat4.create();
-        this.cachedParentWorldXform = mat4.create();
+        this.cached_WorldPos = vec4.create();
+        this.cached_LocalModelMat = mat4.create();
+        this.cached_ParentWorldModelMat = mat4.create();
+        this.cached_WorldModelMat = mat4.create();
+
+        this.dirtyEvent = new Utils.Delegate("dirty");
+        this._boundDirtyHandler = this._handleParentDirty.bind(this);
+
+        this.setParent(parentNode);
 
         this._cleanState();
     }
@@ -33,102 +36,98 @@ export class SceneNode
     /////////////////////////
     // Base functionality
     /////////////////////////
-    isDirtyRecursive() { return this.bDirty || (this.parentNode && this.parentNode.isDirtyRecursive()); } //#TODO would be better to listen to parent events for when dirty 
-    
-    getWorldXform()
+    isDirty() { return this._bDirty}
+
+    makeDirty()
     {
-        if(this.isDirtyRecursive())
+        this._bDirty = true;
+        this.dirtyEvent.dispatchEvent(new Event("dirty"));
+    }
+    
+    getWorldMat()
+    {
+        if(this.isDirty())
         {
             this._cleanState();
         }
         
-        return this._getCachedWorldXform();
+        return this._getCachedWorldMat();
     }
 
     getLocalPosition(out) { return vec3.copy(out, this._localXform.pos); }
     setLocalPosition(pos)
     {
-        this.bDirty = true;
+        this.makeDirty();
         vec3.copy(this._localXform.pos, pos);
     }
 
     getLocalRotation(out) { return quat.copy(out, this._localXform.rot); }
     setLocalRotation(newLocalRotQuat)
     {
-        this.bDirty = true;
+        this.makeDirty();
         quat.copy(this._localXform.rot, newLocalRotQuat);
     }
 
     getLocalScale(out) { return vec3.copy(out, this._localXform.scale); }
     setLocalScale(newScale)
     {
-        this.bDirty = true;
+        this.makeDirty();
         vec3.copy(this._localXform.scale, newScale);
     }
 
     setParent(newParentSceneNode)
     {
+        if(this._parentNode)
+        {
+            //remove previous event listener
+            this._parentNode.dirtyEvent.removeEventListener("dirty", this._boundDirtyHandler);
+        }
+
         this.bForceNextClean = true;
-        this.parentNode = newParentSceneNode;
+        this._parentNode = newParentSceneNode;
+        if(this._parentNode) //pass null to clear parent.
+        {
+            this._parentNode.dirtyEvent.addEventListener("dirty", this._boundDirtyHandler,);
+        }
     }
 
-    //private:
-
     /** Doesn't do recursive checks; should only be called if checks have already been done. */
-    _getCachedWorldXform()
+    _getCachedWorldMat()
     {
-        return mat4.clone(this.cachedWorldXform)
+        return mat4.clone(this.cached_WorldModelMat)
     }
     
     /** Updates current node and any dirty parents. */
     _cleanState()
     {
-        let bDirtyFlagFoundInHierarchy = false;
+        let bWasDirty = false;
 
-        //1. recursively update all parents and cache results
-        if(this.parentNode && this.parentNode._cleanState() || this.bForceNextClean)
+        if(this.isDirty() || this.bForceNextClean)
         {
-            //parents updated, get updated xform; but don't let cursive checks happen since we know they were just updated
-            this.cachedParentWorldXform = this.parentNode._getCachedWorldXform();
-            bDirtyFlagFoundInHierarchy = true;
+            bWasDirty = true;
+            this.cached_LocalModelMat = this._localXform.toMat4(this.cached_LocalModelMat);
+            this.cached_ParentWorldModelMat =  this._parentNode ? this._parentNode._getCachedWorldMat() : mat4.identity(mat4.create());
+            mat4.multiply(/*outparam*/this.cached_WorldModelMat, /*lhs*/this.cached_ParentWorldModelMat, /*rhs*/this.cached_LocalModelMat);
+            this._updateCachesPostClean();
+
+            this._bDirty = false;
+            this.bForceNextClean = false;
         }
-
-        //2. try caching local xform (now that we've got updated cached parent xforms)
-        if(this.bDirty || this.bForceNextClean)
-        {
-            bDirtyFlagFoundInHierarchy = bDirtyFlagFoundInHierarchy || this.bDirty;
-            this.cachedLocalXform = this._localXform.toMat4(this.cachedLocalXform);
-        }
-
-        //3. combine all matrices if any dirty flags found
-        if(bDirtyFlagFoundInHierarchy)
-        {
-            mat4.multiply(/*outparam*/this.cachedWorldXform,
-                 /*lhs*/this.cachedParentWorldXform, /*rhs*/this.cachedLocalXform);
-        }
-
-        //4. update all specific caches
-        this._updateCachesPostClean();
-
-        this.bDirty = false;
-        this.bForceNextClean = false;
 
         //return true if recalculation happened
-        return bDirtyFlagFoundInHierarchy;
+        return bWasDirty;
+    }
+
+    _handleParentDirty()
+    {
+        this.makeDirty();
     }
 
     _updateCachesPostClean()
     {
-        let worldXform = this._getCachedWorldXform();
-        this.cached_worldPos = vec4.transformMat4(this.cached_worldPos, vec4.fromValues(0,0,0,1), worldXform);
+        let worldXform = this._getCachedWorldMat();
+        this.cached_WorldPos = vec4.transformMat4(this.cached_WorldPos, vec4.fromValues(0,0,0,1), worldXform);
         this.v_ChildUpdateCachedPostClean();
-    }
-
-    _getVec3(out, target)
-    {
-        out[0] = target[0];
-        out[1] = target[1];
-        out[2] = target[2];
     }
 }
 

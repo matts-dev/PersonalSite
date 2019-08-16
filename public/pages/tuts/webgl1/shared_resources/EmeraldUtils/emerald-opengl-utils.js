@@ -952,3 +952,19 @@ export class Sound
     }
 
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// Software Engineering Designs
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Modeled after C# delegates; safari may not support extended EventTarget interface 
+ * https://developer.mozilla.org/en-US/docs/Web/API/EventTarget for simplistic implementation for safari if that is case
+*/
+export class Delegate extends EventTarget
+{
+    constructor()
+    {
+        super();
+    }
+}
