@@ -1,63 +1,29 @@
-import * as EmeraldUtils from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
-import {UnitCube3D, texturedCubeFactory, coloredCubeFactory} from "../shared_resources/EmeraldUtils/emerald_easy_shapes.js";
+import * as BMF from "../shared_resources/EmeraldUtils/BitmapFontRendering.js";
 import * as key from "../shared_resources/EmeraldUtils/browser_key_codes.js";
-import {Camera} from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
-import {vec2, vec3, vec4, mat4, quat} from "../shared_resources/gl-matrix_esm/index.js";
-import {RenderBox3D, GlyphRenderer} from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
-import * as BMF from "../shared_resources/EmeraldUtils/BitmapFontRendering.js"
+import * as EmeraldUtils from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
+import { Camera } from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
+import { coloredCubeFactory } from "../shared_resources/EmeraldUtils/emerald_easy_shapes.js";
 import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_BitmapFontConfig.js";
-import { Piano, Scale } from "../shared_resources/EmeraldUtils/music_tools.js";
-import * as Music from "../shared_resources/EmeraldUtils/music_tools.js";
-import {isSafari} from "../shared_resources/EmeraldUtils/browser_key_codes.js";
-import {SceneNode} from "../shared_resources/EmeraldUtils/3d_utils.js";
-import * as util3d from "../shared_resources/EmeraldUtils/3d_utils.js";
+import { mat4, vec3 } from "../shared_resources/gl-matrix_esm/index.js";
+import {CubeRadialButton, RadialPicker} from "../shared_resources/EmeraldUtils/radial_picker.js";
 
 
-
-/////////////////////////////////////////////////////////////////////
-// scene node examples
-////////////////////////////////////////////////////////////////////
-class DemoSceneNode extends SceneNode
+//////////////////////////////////////////////////////
+//Test cases:
+//      full circle radial
+//      semi-circle radial
+//      buttons too large for full circle radial should scale down
+//      buttons too large for semi circle radial should scale down
+//////////////////////////////////////////////////////
+function createButtons(gl, num)
 {
-    constructor(gl, color)
+    let buttons = [];
+    for(let btn = 0; btn < num; ++btn)
     {
-        super();
-
-        this.gl = gl;
-        this.color = color;
-        this.cube = coloredCubeFactory(gl);
+        buttons.push(new CubeRadialButton(gl));
     }
-
-    render(projectionMat, viewMat)
-    {
-        let modelMat = this.getWorldMat();
-        this.cube.updateShader(modelMat, viewMat, projectionMat, this.color);
-        this.cube.bindBuffers();
-        this.cube.render(this.gl);
-    }
+    return buttons;
 }
-
-/** Factory function for demo scene */
-function functionCreateTestHierarchy(gl)
-{
-    let parent = new DemoSceneNode(gl, vec3.fromValues(1,0,0));
-    let child = new DemoSceneNode(gl, vec3.fromValues(0,1,0));
-    let grandChild = new DemoSceneNode(gl, vec3.fromValues(0,0,1));
-
-    child.setParent(parent);
-    grandChild.setParent(child);
-
-    
-    parent.setLocalRotation(quat.setAxisAngle(quat.create(), vec3.fromValues(0,0,1), 45 * (3.1415/180)));
-    
-    child.setLocalPosition(vec3.fromValues(0, 1, 0));
-
-    grandChild.setLocalPosition(vec3.fromValues(1,0,0));
-
-    return {parent: parent, child:child, grandChild:grandChild};
-
-}
-
 
 //////////////////////////////////////////////////////
 //module level statics
@@ -71,6 +37,7 @@ var game = null;
 //////////////////////////////////////////////////////
 // Base Game Class
 //////////////////////////////////////////////////////
+
 class Game
 {
     constructor(glCanvasId = "#glCanvas")
@@ -101,33 +68,95 @@ class Game
         this.bRenderLineTrace = false;
         this.bStopTicks;
 
-        let nodeData = functionCreateTestHierarchy(this.gl);
-        this.parentNode = nodeData.parent;
-        this.childNode = nodeData.child;
-        this.grandChildNode = nodeData.grandChild;
-
         this.font = this.bitmapFont = new Montserrat_BMF(this.gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
-        this.text_instructions1 = new BMF.BitmapTextblock3D(this.gl, this.font, "press 1,2,3 to select target (for local xform updates)");
+        this.text_instructions1 = new BMF.BitmapTextblock3D(this.gl, this.font, "Radial Picker Test. Click/touch a button to open up radial picker. WASD to move camera.");
         this.text_instructions1.xform.pos = vec3.fromValues(0,4.5,0);
         this.text_instructions1.xform.scale = vec3.fromValues(10,10,10);
+        this.text_instructions1.hAlignment = BMF.HAlignment.CENTER;
 
-        this.text_instructions2 = new BMF.BitmapTextblock3D(this.gl, this.font, "press s=scale, p=position, r=rotation");
-        this.text_instructions2.xform.pos = vec3.fromValues(0,4,0);
-        this.text_instructions2.xform.scale = vec3.fromValues(10,10,10);
 
-        this.text_instructions3 = new BMF.BitmapTextblock3D(this.gl, this.font, "press x, y, or z to change manipulated value");
-        this.text_instructions3.xform.pos = vec3.fromValues(0,3.5,0);
-        this.text_instructions3.xform.scale = vec3.fromValues(10,10,10);
+        this.text1 = new BMF.BitmapTextblock3D(this.gl, this.font, "360, center pivot.");
+        this.text1.xform.pos = vec3.fromValues(-6,2.5,0);
+        this.text1.xform.scale = vec3.fromValues(10,10,10);
+        this.text1.hAlignment = BMF.HAlignment.CENTER;
+        
+        this.text2 = new BMF.BitmapTextblock3D(this.gl, this.font, "360, no pivot.");
+        this.text2.xform.pos = vec3.fromValues(-3,2.5,0);
+        this.text2.xform.scale = vec3.fromValues(10,10,10);
+        this.text2.hAlignment = BMF.HAlignment.CENTER;
 
-        this.text_instructions4 = new BMF.BitmapTextblock3D(this.gl, this.font, "q=decrease, e=increase, u=(manipulate uniformly)");
-        this.text_instructions4.xform.pos = vec3.fromValues(0,3,0);
-        this.text_instructions4.xform.scale = vec3.fromValues(10,10,10);
+        this.text3 = new BMF.BitmapTextblock3D(this.gl, this.font, "90, center pivot.");
+        this.text3.xform.pos = vec3.fromValues(0,2.5,0);
+        this.text3.xform.scale = vec3.fromValues(10,10,10);
+        this.text3.hAlignment = BMF.HAlignment.CENTER;
 
-        //manipulation state
-        this.bUniformManipulation = false;
-        this.targetXYZ = "x";
-        this.targetManipulator = "pos";
-        this.targetObject = this.parentNode;
+        this.text4 = new BMF.BitmapTextblock3D(this.gl, this.font, "180, center pivot.");
+        this.text4.xform.pos = vec3.fromValues(3,2.5,0);
+        this.text4.xform.scale = vec3.fromValues(10,10,10);
+        this.text4.hAlignment = BMF.HAlignment.CENTER;
+
+        this.text5 = new BMF.BitmapTextblock3D(this.gl, this.font, "180, no pivot.");
+        this.text5.xform.pos = vec3.fromValues(6,2.5,0);
+        this.text5.xform.scale = vec3.fromValues(10,10,10);
+        this.text5.hAlignment = BMF.HAlignment.CENTER;
+
+        let bLargeNumber = true;
+        if(bLargeNumber)
+        {
+            this.layer1Buttons = createButtons(this.gl, 10);
+            this.layer2Buttons = createButtons(this.gl, 20);
+            this.layer3Buttons = createButtons(this.gl, 30);
+            this.layer4Buttons = createButtons(this.gl, 40);
+        }
+        else
+        {
+            this.layer1Buttons = createButtons(this.gl, 5);
+            this.layer2Buttons = createButtons(this.gl, 2);
+            this.layer3Buttons = createButtons(this.gl, 3);
+            this.layer4Buttons = createButtons(this.gl, 4);
+        }
+        function makeButtonsChild(parentButtons, childButtons)
+        {
+            for(const parentBtn of parentButtons)
+            {
+                parentBtn.childButtons = childButtons;
+            }
+        };
+        makeButtonsChild(this.layer1Buttons, this.layer2Buttons);
+        makeButtonsChild(this.layer2Buttons, this.layer3Buttons);
+        makeButtonsChild(this.layer3Buttons, this.layer4Buttons);
+
+        this.openbtn_360_centerpivot = new CubeRadialButton(this.gl);
+        makeButtonsChild([this.openbtn_360_centerpivot], this.layer1Buttons);
+        this.radialPicker_360_centerpivot = new RadialPicker(this.openbtn_360_centerpivot);
+        this.radialPicker_360_centerpivot.setLocalPosition(vec3.fromValues(-6,0,0));
+        // this.radialPicker_360_centerpivot.bCenterButtonsAtPivot = true;
+
+        this.openbtn_360_nopivot = new CubeRadialButton(this.gl);
+        makeButtonsChild([this.openbtn_360_nopivot], this.layer1Buttons);
+        this.radialPicker_360_nopivot = new RadialPicker(this.openbtn_360_nopivot);
+        this.radialPicker_360_nopivot.setLocalPosition(vec3.fromValues(-3,0,0));
+        this.radialPicker_360_nopivot.bCenterButtonsAtPivot = false;
+
+        this.openbtn_90_centerpivot = new CubeRadialButton(this.gl);
+        makeButtonsChild([this.openbtn_90_centerpivot], this.layer1Buttons);
+        this.radialPicker_90_centerpivot = new RadialPicker(this.openbtn_90_centerpivot, 90);
+        this.radialPicker_90_centerpivot.setLocalPosition(vec3.fromValues(0,0,0));
+        this.radialPicker_90_centerpivot.startItemDir = vec3.fromValues(1,0,0);
+
+        this.openbtn_180_centerpivot = new CubeRadialButton(this.gl);
+        makeButtonsChild([this.openbtn_180_centerpivot], this.layer1Buttons);
+        this.radialPicker_180_centerpivot = new RadialPicker(this.openbtn_180_centerpivot, 180);
+        this.radialPicker_180_centerpivot.setLocalPosition(vec3.fromValues(3,0,0));
+        // this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(1,0,0);
+        this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(0,-1,0);
+
+        this.openbtn_180_nopivot = new CubeRadialButton(this.gl);
+        makeButtonsChild([this.openbtn_180_nopivot], this.layer1Buttons);
+        this.radialPicker_180_nopivot = new RadialPicker(this.openbtn_180_nopivot, 180);
+        this.radialPicker_180_nopivot.setLocalPosition(vec3.fromValues(6,0,0));
+        this.radialPicker_180_nopivot.startItemDir = vec3.fromValues(1,0,0);
+        this.radialPicker_180_nopivot.bCenterButtonsAtPivot = false;
 
         //////////////////////////////
         
@@ -147,23 +176,6 @@ class Game
             montserratFont : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png"),
         }
     }
-
-    // _createShaders(gl){
-    //     let quad2DShader = EmeraldUtils.initShaderProgram(gl, quad2DVertSrc, quad2DFragSrc);
-    //     return {
-    //         quad2D : {
-    //             program : quad2DShader,
-    //             attribs : {
-    //                 pos : gl.getAttribLocation(quad2DShader, "vertPos"),
-    //                 uv : gl.getAttribLocation(quad2DShader, "texUVCoord"),
-    //             },
-    //             uniforms : {
-    //                 model      : gl.getUniformLocation(quad2DShader, "model"),
-    //                 texSampler : gl.getUniformLocation(quad2DShader, "diffuseTexSampler"),
-    //             },
-    //         },
-    //     };
-    // }
 
     _bindCallbacks()
     {
@@ -216,92 +228,10 @@ class Game
         {
             this.updateZoom(-1);
         }
-
-        if(event.keyCode == key.q || event.keyCode == key.e)
-        {
-            let delta = event.keyCode == key.q ? -1 : 1;
-            if(this.targetObject)
-            {
-                let manipulating = null;
-                let manipVec = vec3.fromValues(0,0,0);
-                if(this.bUniformManipulation)
-                {
-                    manipVec[0] = manipVec[1] = manipVec[2] = delta;
-                }
-                else
-                {
-                    //TODO not sure how to char-char in javascript
-                    let manipIdx = (this.targetXYZ === "x") ? 0 : ((this.targetXYZ === "y") ? 1 : 2)
-                    manipVec[manipIdx] = delta;
-                }
-
-                if(this.targetManipulator === "pos")
-                {
-                    vec3.scale(manipVec, manipVec, 0.25);
-                    let localPos = this.targetObject.getLocalPosition(vec3.create());
-                    vec3.add(localPos, localPos, manipVec);
-                    this.targetObject.setLocalPosition(localPos);
-                }
-                else if (this.targetManipulator === "scale")
-                {
-                    vec3.scale(manipVec, manipVec, 0.1);
-                    let localScale = this.targetObject.getLocalScale(vec3.create());
-                    vec3.add(localScale, localScale, manipVec);
-                    this.targetObject.setLocalScale(localScale);
-                }
-                else if (this.targetManipulator === "rot")
-                {
-                    if(!this.bUniformManipulation)
-                    {
-                        let rotDelta = quat.setAxisAngle(quat.create(), manipVec, 15.0 *(3.1415/180));
-                        let localRot = this.targetObject.getLocalRotation(quat.create());
-                        quat.mul(localRot, localRot, rotDelta);
-                        this.targetObject.setLocalRotation(localRot);
-                    }
-                }
-            }
-        }
-        if(event.keyCode == key.u)
-        {
-            this.bUniformManipulation = !this.bUniformManipulation;
-        }
-        if(event.keyCode == key.x)
-        {
-            this.targetXYZ = "x";
-        }
         if(event.keyCode == key.y)
         {
-            this.targetXYZ = "y";
+            this.bRenderLineTrace = true;
         }
-        if(event.keyCode == key.z)
-        {
-            this.targetXYZ = "z";
-        }
-        if(event.keyCode == key.digit_1)
-        {
-            this.targetObject = this.parentNode;
-        }
-        if(event.keyCode == key.digit_2)
-        {
-            this.targetObject = this.childNode;
-        }
-        if(event.keyCode == key.digit_3)
-        {
-            this.targetObject = this.grandChildNode;
-        }
-        if(event.keyCode == key.s)
-        {
-            this.targetManipulator = "scale";
-        }
-        if(event.keyCode == key.p)
-        {
-            this.targetManipulator = "pos";
-        }
-        if(event.keyCode == key.r)
-        {
-            this.targetManipulator = "rot";
-        }
-
 
         vec3.scale(deltaMovement, deltaMovement, this.camera.speed * this.deltaSec);
         vec3.add(this.camera.position, this.camera.position, deltaMovement);
@@ -368,12 +298,12 @@ class Game
             {
                 let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
                 vec3.normalize(rayDir, rayDir);
-                // let clickedKey = this.piano.clickTest(this.rayStart, rayDir);
-                // if(clickedKey)
-                // {
-                //     this.rayEnd = null;
-                //     this.rayStart = null;
-                // }
+
+                this.radialPicker_360_centerpivot.hitTest(this.rayStart, rayDir);
+                this.radialPicker_360_nopivot.hitTest(this.rayStart, rayDir);
+                this.radialPicker_90_centerpivot.hitTest(this.rayStart, rayDir);
+                this.radialPicker_180_centerpivot.hitTest(this.rayStart, rayDir);
+                this.radialPicker_180_nopivot.hitTest(this.rayStart, rayDir);
             }
         }
     }
@@ -483,7 +413,6 @@ class Game
 
         let viewMat = this.camera.getView();
 
-
         if(this.bRenderLineTrace && this.rayStart && this.rayEnd)
         {
             this.lineRenderer.renderLine(this.rayStart, this.rayEnd, vec3.fromValues(1,0,0), viewMat, perspectiveMat);
@@ -501,14 +430,16 @@ class Game
         }
 
         this.text_instructions1.render(perspectiveMat, viewMat);
-        this.text_instructions2.render(perspectiveMat, viewMat);
-        this.text_instructions3.render(perspectiveMat, viewMat);
-        this.text_instructions4.render(perspectiveMat, viewMat);
-
-
-        this.parentNode.render(perspectiveMat, viewMat);
-        this.childNode.render(perspectiveMat, viewMat);
-        this.grandChildNode.render(perspectiveMat, viewMat);
+        this.text1.render(perspectiveMat, viewMat);
+        this.text2.render(perspectiveMat, viewMat);
+        this.text3.render(perspectiveMat, viewMat);
+        this.text4.render(perspectiveMat, viewMat);
+        this.text5.render(perspectiveMat, viewMat);
+        this.radialPicker_360_centerpivot.render(perspectiveMat, viewMat);
+        this.radialPicker_360_nopivot.render(perspectiveMat, viewMat);
+        this.radialPicker_90_centerpivot.render(perspectiveMat, viewMat);
+        this.radialPicker_180_centerpivot.render(perspectiveMat, viewMat);
+        this.radialPicker_180_nopivot.render(perspectiveMat, viewMat);
 
         if(!this.bStopTicks)
         {

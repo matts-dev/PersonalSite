@@ -603,7 +603,7 @@ export function rayTraceFastAABB(xMin, xMax, yMin, yMax, zMin, zMax, rayStart, r
     let fZ = zMin;
     let cZ = zMax;
 
-    if (fX == cX || fY == cY || fZ == cZ) { return null;};
+    if (fX == cX || fY == cY || fZ == cZ) { return null;}
 
     //use algbra to calculate T when these planes are hit; similar to above example -- looking at single components
     // pnt = s + t * d;			t = (pnt - s)/d
@@ -887,7 +887,7 @@ export class Camera
 // Audio
 /////////////////////////////////////////////////////////////////////////////////
 
-let documentSoundMap = {}
+// let documentSoundMap = {}
 
 export class Sound
 {
@@ -1007,7 +1007,7 @@ class EventTarget_Impl
         var stack = this.listeners[event.type].slice();
         for (var i = 0, l = stack.length; i < l; i++)
         {
-            stack[i].call(this, event);
+            stack[i].call(this, event); //appears that when function is bound(eg function.bind(this)), the "this" keyword passed here doesn't stomp bound "this"; which is a good thing for oop
         }
         return !event.defaultPrevented;
     }

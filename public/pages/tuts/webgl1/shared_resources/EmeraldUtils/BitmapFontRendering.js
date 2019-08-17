@@ -110,23 +110,14 @@ export class Glyph
 //https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6
 export const VAlignment = Object.freeze({
     TOP:   Symbol("top"),
-    MIDDLE:  Symbol("middle"),
+    MIDDLE:  Symbol("center"),
     BOTTOM: Symbol("bottom")
 });
 export const HAlignment = Object.freeze({
     LEFT:   Symbol("left"),
-    MIDDLE:  Symbol("middle"),
+    MIDDLE:  Symbol("center"),
     RIGHT: Symbol("right")
 });
-
-let alignMultHelper = 
-{
-    LEFT : -1.0,
-    RIGHT : 0,
-    CENTER : -0.5,  //take half distance
-    TOP : 1.0,
-    BOTTOM: 0.0,
-};
 
 export class BitmapTextblock3D
 {
@@ -143,10 +134,6 @@ export class BitmapTextblock3D
 
         this.hAlignment = HAlignment.RIGHT;
         this.vAlignment = VAlignment.BOTTOM;
-
-        this.bCenterHorizontal = false;
-        this.bLeftAlign = false; 
-        this.bCenterVertical = false;
         this.localWidth = 0;
 
         //setup
@@ -196,7 +183,7 @@ export class BitmapTextblock3D
             let sceneModelMat = mat4.create();
             if(this.parentModelMat)
             {
-                mat4.mul(sceneModelMat, parentXformMat, sceneModelMat); 
+                mat4.mul(sceneModelMat, this.parentXformMat, sceneModelMat); 
             }
             let textBlockModelMat = this.xform.toMat4(mat4.create());
             mat4.mul(sceneModelMat, sceneModelMat, textBlockModelMat);
