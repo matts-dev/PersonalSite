@@ -18,6 +18,7 @@ export class SceneNode
         this.cached_LocalModelMat = mat4.create();
         this.cached_ParentWorldModelMat = mat4.create();
         this.cached_WorldModelMat = mat4.create();
+        this.cached_InverseWorldModel = null; //lazy calculate
 
         this.dirtyEvent = new Utils.Delegate("dirty");
         this._boundDirtyHandler = this._handleParentDirty.bind(this);
@@ -57,22 +58,41 @@ export class SceneNode
     getLocalPosition(out) { return vec3.copy(out, this._localXform.pos); }
     setLocalPosition(pos)
     {
-        this.makeDirty();
         vec3.copy(this._localXform.pos, pos);
+        this.makeDirty();
     }
 
     getLocalRotation(out) { return quat.copy(out, this._localXform.rot); }
     setLocalRotation(newLocalRotQuat)
     {
-        this.makeDirty();
         quat.copy(this._localXform.rot, newLocalRotQuat);
+        this.makeDirty();
     }
 
     getLocalScale(out) { return vec3.copy(out, this._localXform.scale); }
     setLocalScale(newScale)
     {
-        this.makeDirty();
         vec3.copy(this._localXform.scale, newScale);
+        this.makeDirty();
+    }
+
+    getWorldPosition() 
+    {
+        if(this.isDirty())
+        {
+            this._cleanState();
+        }
+        return this.cached_WorldPos;
+    }
+
+    getInverseWorldMat()
+    {
+        this._cleanState();
+        if(!this.cached_InverseWorldModel)
+        {
+            this.cached_InverseWorldModel = mat4.invert(mat4.create(), this.cached_WorldModelMat);
+        }
+        return this.cached_InverseWorldModel;
     }
 
     setParent(newParentSceneNode)
@@ -83,7 +103,7 @@ export class SceneNode
             this._parentNode.dirtyEvent.removeEventListener("dirty", this._boundDirtyHandler);
         }
 
-        this.bForceNextClean = true;
+        this.makeDirty();
         this._parentNode = newParentSceneNode;
         if(this._parentNode) //pass null to clear parent.
         {
@@ -92,9 +112,13 @@ export class SceneNode
     }
 
     /** Doesn't do recursive checks; should only be called if checks have already been done. */
-    _getCachedWorldMat()
+    _getCachedWorldMat(out)
     {
-        return mat4.clone(this.cached_WorldModelMat)
+        if(out == null)
+        {
+            out = mat4.create();
+        }
+        return mat4.copy(out, this.cached_WorldModelMat);
     }
     
     /** Updates current node and any dirty parents. */
@@ -102,12 +126,13 @@ export class SceneNode
     {
         let bWasDirty = false;
 
-        if(this.isDirty() || this.bForceNextClean)
+        if(this.isDirty())
         {
             bWasDirty = true;
             this.cached_LocalModelMat = this._localXform.toMat4(this.cached_LocalModelMat);
-            this.cached_ParentWorldModelMat =  this._parentNode ? this._parentNode._getCachedWorldMat() : mat4.identity(mat4.create());
+            this.cached_ParentWorldModelMat =  this._parentNode ? this._parentNode.getWorldMat() : mat4.identity(mat4.create());
             mat4.multiply(/*outparam*/this.cached_WorldModelMat, /*lhs*/this.cached_ParentWorldModelMat, /*rhs*/this.cached_LocalModelMat);
+            this.cached_InverseWorldModel = null;
             this._updateCachesPostClean();
 
             this._bDirty = false;
