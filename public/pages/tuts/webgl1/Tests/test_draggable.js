@@ -86,6 +86,8 @@ class Game
         this.dragWidget = new DragWidgetTextured(this.gl);
         this.dragWidget.setLocalPosition(vec3.fromValues(1,1,0));
 
+        this.dragWidgetSelfRegister = new DragWidgetTextured(this.gl, true, this.glCanvas, this.camera);
+
         let bLargeNumber = false;
         if(bLargeNumber)
         {
@@ -429,7 +431,7 @@ class Game
         //this.texturedQuad.render();
 
         this.dragWidget.render(viewMat, perspectiveMat);
-
+        this.dragWidgetSelfRegister.render(viewMat, perspectiveMat);
 
         if(!this.bStopTicks)
         {
