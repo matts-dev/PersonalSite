@@ -28,17 +28,27 @@ export class DragWidget extends SceneNode
 
     notifyInputDownEvent(e, canvas, camera)
     {
-        let ray = camera.generateClickedRay(e, canvas);
+        let touch = null;
+        if (e.changedTouches && e.changedTouches.length > 0) 
+        {
+            touch = e.changedTouches[0]; 
+        }
+
+        let ray = camera.generateClickedRay(touch ? touch : e, canvas);
         if(ray)
         {
             if(this.v_rayHitTest(ray.rayStart, ray.rayDir))
             {
+                let clientX = touch ? touch.clientX : e.clientX;
+                let clientY = touch ? touch.clientY : e.clientY;
+
                 this.bDragging = true;
-                if (e.changedTouches && e.changedTouches.length > 0) { this.trackedTouch = e.changedTouches[0]; }
+                // if (e.changedTouches && e.changedTouches.length > 0) { this.trackedTouch = e.changedTouches[0]; }
+                this.trackedTouch = touch;
                 vec3.copy(this.draggingRightBasis,camera.right);
                 vec3.copy(this.draggingUpBasis, camera.up);
-                this.startDragClientX = e.clientX;
-                this.startDragClientY = e.clientY;
+                this.startDragClientX = clientX;
+                this.startDragClientY = clientY;
                 // let aspect = canvas.clientWidth / canvas.clientHeight;  //#note clientWidth may not be a great value to read here; scrolling considered?
                 
                 this.clientToCameraConversion = (camera.orthoHeight) / canvas.clientHeight; 
@@ -54,14 +64,35 @@ export class DragWidget extends SceneNode
     {
         if(this.bDragging)
         {
+            let clientX = 0;
+            let clientY = 0;
             if(this.trackedTouch)
             {
-                //check to make sure touches match, otherwise return
+                let foundTouch = false;
+                //make sure this is same touch; object instances will be different
+                if (e.changedTouches && e.changedTouches.length > 0) 
+                {
+                    for(const touch of event.changedTouches)
+                    {
+                        if(this.trackedTouch.identifier == touch.identifier)
+                        {
+                            clientX = touch.clientX;
+                            clientY = touch.clientY;
+                            foundTouch = true;
+                            break;
+                        }
+                    }
+                }
+                if(!foundTouch) { return ;}
             }
-            
+            else
+            {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
             //convert the drag mouse coordinates to camera coordinates
-            let deltaClientX = e.clientX - this.startDragClientX;
-            let deltaClientY = e.clientY - this.startDragClientY;
+            let deltaClientX = clientX - this.startDragClientX;
+            let deltaClientY = clientY - this.startDragClientY;
             
             let deltaCamX = deltaClientX * this.clientToCameraConversion;
             let deltaCamY = deltaClientY * this.clientToCameraConversion;
@@ -94,9 +125,10 @@ export class DragWidget extends SceneNode
                 {
                     for(const touch of event.changedTouches)
                     {
-                        if(this.trackedTouch == touch)
+                        if(this.trackedTouch.identifier == touch.identifier)
                         {
                             this.bDragging = false;
+                            this.trackedTouch = null;
                             break;
                         }
                     }
