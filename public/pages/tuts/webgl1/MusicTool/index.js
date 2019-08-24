@@ -55,7 +55,7 @@ class Game
         this.lineRenderer = new EmeraldUtils.LineRenderer(this.gl);
 
         this.camera.enableOrthoMode = true;
-        this.orthoCameraHeight = 10;
+        this.camera.orthoHeight = 10;
         this.zoomSpeed = 1;
 
         this.bRenderLineTrace = false;
@@ -205,8 +205,8 @@ class Game
                     let fractionHeight = y / canvasHalfHeight;
                     
                     let aspect = canvas.clientWidth / canvas.clientHeight;
-                    let orthoHalfHeight = this.orthoCameraHeight / 2.0
-                    let orthoHalfWidth = (aspect * this.orthoCameraHeight) / 2.0; 
+                    let orthoHalfHeight = this.camera.orthoHeight / 2.0
+                    let orthoHalfWidth = (aspect * this.camera.orthoHeight) / 2.0; 
         
                     let numCameraUpUnits = fractionHeight * orthoHalfHeight;
                     let numCameraRightUnits = fractionWidth * orthoHalfWidth;
@@ -249,7 +249,7 @@ class Game
 
     updateZoom(normalizedY)
     {
-        this.orthoCameraHeight = this.orthoCameraHeight + normalizedY * this.zoomSpeed;
+        this.camera.orthoHeight = this.camera.orthoHeight + normalizedY * this.zoomSpeed;
     }
 
     handleMouseWheel(e)
@@ -284,6 +284,7 @@ class Game
     {
         event.preventDefault(); //stop mouse event
     }
+    
     handleTouchCancel(event)
     {
         event.preventDefault(); //stop mouse event
@@ -309,8 +310,8 @@ class Game
             // let fractionHeight = y / canvasHalfHeight;
             
             // let aspect = canvas.clientWidth / canvas.clientHeight;
-            // let orthoHalfHeight = this.orthoCameraHeight / 2.0
-            // let orthoHalfWidth = (aspect * this.orthoCameraHeight) / 2.0; 
+            // let orthoHalfHeight = this.camera.orthoHeight / 2.0
+            // let orthoHalfWidth = (aspect * this.camera.orthoHeight) / 2.0; 
 
             // let numCameraUpUnits = fractionHeight * orthoHalfHeight;
             // let numCameraRightUnits = fractionWidth * orthoHalfWidth;
@@ -386,7 +387,7 @@ class Game
         let aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
         let perspectiveMat = null;
-        if(this.camera.enableOrthoMode) { perspectiveMat = this.camera.getOrtho(aspect * this.orthoCameraHeight, this.orthoCameraHeight);}
+        if(this.camera.enableOrthoMode) { perspectiveMat = this.camera.getOrtho(aspect * this.camera.orthoHeight, this.camera.orthoHeight);}
         else                            { perspectiveMat = this.camera.getPerspective(aspect); }
 
         let viewMat = this.camera.getView();

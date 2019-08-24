@@ -7,6 +7,7 @@ import * as EmeraldUtils from "./emerald-opengl-utils.js"
 import {Transform} from "./emerald-opengl-utils.js"
 import { coloredCubeFactory, coloredCubeFactory_pivoted} from "./emerald_easy_shapes.js";
 import {RadialPicker, RadialButton} from "./radial_picker.js";
+import { SceneNode } from "./3d_utils.js";
 
 
 
@@ -521,4 +522,23 @@ export class Piano
         }
     }
 
+}
+
+class PianoSettingsWidget extends SceneNode
+{
+
+}
+
+export class PianoManager
+{
+    constructor(gl, soundPrefixLocation="../shared_resources/Sounds/PianoKeySounds/", numOctaves=2)
+    {
+        this.dragwidget = new DragWidget(gl);
+
+        this.piano = new Piano(gl, soundPrefixLocation, numOctaves);
+        this.piano.setParent(this.dragwidget);
+
+        this.pianoSettings = new PianoSettingsWidget();
+        this.pianoSettings.setParent(this.dragwidget);
+    }
 }

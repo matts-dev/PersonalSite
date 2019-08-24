@@ -10,7 +10,6 @@ import * as EmeraldUtils from "./emerald-opengl-utils.js"
 //  Cube
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 export class UnitCube3D{
     constructor(gl, shaderVertSrc, shaderFragSrc, uniformList)
     {
@@ -129,7 +128,6 @@ export class UnitCube3D{
         gl.deleteBuffers(this.buffers.EBO);
     }
 }
-
 
 //////////////////////////////
 // Unit cube that projects out of origin
@@ -345,4 +343,206 @@ export function coloredCubeFactory_pivoted(gl)
         this.coloredCube.bindBuffers();
         this.coloredCube.updateShader(coloredCubeModel, viewMat, perspectiveMat, cubeColor);
         this.coloredCube.render();
+*/
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  QUAD
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export class UnitQuad3D{
+    constructor(gl, shaderVertSrc, shaderFragSrc, uniformList)
+    {
+        ////////////////////////////////////////
+        // buffers
+        ////////////////////////////////////////
+        const unitCube_PosVBO = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, unitCube_PosVBO);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(EmeraldUtils.quad3DPositions), gl.STATIC_DRAW);
+
+        const unitCube_NormalsVBO = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, unitCube_NormalsVBO);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(EmeraldUtils.quad3DNormals), gl.STATIC_DRAW);
+
+        const unitCube_UVsVBO = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, unitCube_UVsVBO);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(EmeraldUtils.quadFlippedUVs), gl.STATIC_DRAW);
+
+        // const unitCube_EBO = gl.createBuffer();
+        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, unitCube_EBO);
+        // gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(EmeraldUtils.unitCubeIndices), gl.STATIC_DRAW); no indices?
+
+        ///////////////////////////////////////////
+        // shaders
+        ///////////////////////////////////////////
+        let cubeShader = EmeraldUtils.initShaderProgram(gl, shaderVertSrc, shaderFragSrc);
+
+        /////////////////////////////////////////////
+        //fields
+        /////////////////////////////////////////////
+        this.shader = {
+            program : cubeShader,
+            attribs : {
+                pos: gl.getAttribLocation(cubeShader, "vertPos"),
+                uv: gl.getAttribLocation(cubeShader, "texUVCoord"),
+                normal: gl.getAttribLocation(cubeShader, "vertNormal"),
+            },
+            uniforms : {
+                //populate from list
+            }
+        }
+        //cache all provided uniform locations
+        this._populateUniforms(gl, uniformList);
+
+        this.buffers =  {
+            posVBO : unitCube_PosVBO,
+            normalVBO : unitCube_NormalsVBO,
+            uvVBO : unitCube_UVsVBO,
+        };
+        this.gl = gl;
+    }
+
+    _populateUniforms(gl, uniformList)
+    {
+        for(let uniform of uniformList)
+        {
+            this.shader.uniforms[uniform] = gl.getUniformLocation(this.shader.program, uniform);
+        }
+    }
+
+    bindBuffers()
+    {
+        let gl = this.gl;
+
+        //all shaders are expected to have this attribute, so no if checking to see if shader found its location
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.posVBO);
+        gl.vertexAttribPointer(this.shader.attribs.pos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.shader.attribs.pos);
+
+        //see above vertex attribute to understand what parameters are
+        if(this.shader.attribs.uv >= 0)
+        {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.uvVBO);
+            gl.vertexAttribPointer(this.shader.attribs.uv, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.shader.attribs.uv);
+        }
+    
+        //enable normal attribute
+        if(this.shader.attribs.normal >= 0)
+        {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.normalVBO);
+            gl.vertexAttribPointer(this.shader.attribs.normal, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.shader.attribs.normal);
+        }
+    }
+
+    /*
+        //#future probably should refactor this into a base class so Quad and Cube don't dupliate code.
+        @param GL_TEXTURE_NUM : eg "gl.TEXTURE0"
+    */
+    bindTexture(GL_TEXTURE_NUM /*= this.gl.TEXTURE0*/, glTextureId, shaderUniformName, )
+    {
+        this.gl.useProgram(this.shader.program);
+        this.gl.activeTexture(GL_TEXTURE_NUM);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, glTextureId);
+        this.gl.uniform1i(this.shader.uniforms[shaderUniformName], GL_TEXTURE_NUM - this.gl.TEXTURE0/*0 corresponds to gl.TEXTURE0*/);
+    }
+
+    /* This method assumes you have aquired this cube's shader and configured its uniforms and bound buffers*/
+    render()
+    {
+        let gl = this.gl;
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    deleteBuffers()
+    {
+        let gl = this.gl;
+
+        gl.deleteBuffers(this.buffers.posVBO);
+        gl.deleteBuffers(this.buffers.normalVBO);
+        gl.deleteBuffers(this.buffers.uvVBO);
+        gl.deleteBuffers(this.buffers.EBO);
+    }
+}
+/////////////////////////////////////////////////////////////////////////////////////
+// textured quad factory
+////////////////////////////////////////////////////////////////////////////////////
+
+export const simpleTexturedQuadShapeShader_vs =
+`
+    attribute vec4 vertPos;
+    attribute vec3 vertNormal;
+    attribute vec2 texUVCoord;
+
+    uniform mat4 model;
+    uniform mat4 view_model;
+    uniform mat4 normalMatrix; //the inverse transpose of the view_model matrix
+    uniform mat4 projection;
+
+    varying highp vec2 uvCoord; //this is like an out variable in opengl3.3+
+
+    void main(){
+        gl_Position = projection * view_model * vertPos;
+        uvCoord = texUVCoord;
+    }
+`;
+
+export const simpleTexturedQuadShapeShader_fs = `
+    varying highp vec2 uvCoord;
+    uniform sampler2D texSampler;
+
+    void main(){
+        gl_FragColor = texture2D(texSampler, uvCoord);
+    }
+`;
+export const discard_simpleTexturedQuadShapeShader_fs = `
+    varying highp vec2 uvCoord;
+    uniform sampler2D texSampler;
+
+    void main(){
+        gl_FragColor = texture2D(texSampler, uvCoord);
+        if(gl_FragColor.a < 0.05)
+        {
+            discard;
+        }
+    }
+`;
+export function texturedQuadFactory(gl, vs_src = simpleTexturedQuadShapeShader_vs, fs_src = simpleTexturedQuadShapeShader_fs)
+{
+    
+    let texturedCube = new UnitQuad3D(gl,
+        vs_src, fs_src,
+        ["projection", "view_model", "normalMatrix", "texSampler"]);
+
+    texturedCube.updateShader = function(modelMat, viewMat, projectionMat){
+        let gl = this.gl;
+
+        gl.useProgram(this.shader.program);
+        
+        let view_model = mat4.multiply(mat4.create(), viewMat, modelMat)
+        gl.uniformMatrix4fv(this.shader.uniforms.view_model, false, view_model);
+        
+        let normMatrix = mat4.invert(mat4.create(), modelMat);
+        mat4.transpose(normMatrix, normMatrix);
+        gl.uniformMatrix4fv(this.shader.uniforms.normalMatrix, false, normMatrix);
+
+        //this step shouldn't be done for every cube
+        gl.uniformMatrix4fv(this.shader.uniforms.projection, false, projectionMat);
+    }
+
+    return texturedCube;
+}
+
+//example usage
+/*
+        let aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        let perspectiveMat = this.camera.getPerspective(aspect);
+        let viewMat = this.camera.getView();
+        let modelMat = mat4.create();
+
+        this.texturedQuad.bindBuffers();
+        this.texturedQuad.bindTexture(gl.TEXTURE0, this.textures.grass.glTextureId, this.texturedCubeTest.shader.uniforms.texSampler);
+        this.texturedQuad.updateShader(vec3.fromValues(1, 1, -9), viewMat, perspectiveMat);
+        this.texturedQuad.render();
+
 */

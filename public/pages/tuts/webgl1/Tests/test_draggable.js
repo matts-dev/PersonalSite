@@ -2,10 +2,11 @@ import * as BMF from "../shared_resources/EmeraldUtils/BitmapFontRendering.js";
 import * as key from "../shared_resources/EmeraldUtils/browser_key_codes.js";
 import * as EmeraldUtils from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
 import { Camera } from "../shared_resources/EmeraldUtils/emerald-opengl-utils.js";
-import { coloredCubeFactory } from "../shared_resources/EmeraldUtils/emerald_easy_shapes.js";
+import { coloredCubeFactory, texturedQuadFactory, simpleTexturedQuadShapeShader_vs, discard_simpleTexturedQuadShapeShader_fs } from "../shared_resources/EmeraldUtils/emerald_easy_shapes.js";
 import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_BitmapFontConfig.js";
+import { CubeRadialButton, RadialPicker } from "../shared_resources/EmeraldUtils/radial_picker.js";
 import { mat4, vec3 } from "../shared_resources/gl-matrix_esm/index.js";
-import {CubeRadialButton, RadialPicker} from "../shared_resources/EmeraldUtils/radial_picker.js";
+import { DragWidgetTextured} from "../shared_resources/EmeraldUtils/draggable.js";
 
 
 //////////////////////////////////////////////////////
@@ -62,7 +63,7 @@ class Game
         this.lineRenderer = new EmeraldUtils.LineRenderer(this.gl);
 
         this.camera.enableOrthoMode = true;
-        this.orthoCameraHeight = 10;
+        this.camera.orthoHeight = 10;
         this.zoomSpeed = 1;
 
         this.bRenderLineTrace = false;
@@ -75,30 +76,15 @@ class Game
         this.text_instructions1.hAlignment = BMF.HAlignment.CENTER;
 
 
-        this.text1 = new BMF.BitmapTextblock3D(this.gl, this.font, "360, center pivot.");
-        this.text1.xform.pos = vec3.fromValues(-6,2.5,0);
-        this.text1.xform.scale = vec3.fromValues(10,10,10);
-        this.text1.hAlignment = BMF.HAlignment.CENTER;
-        
-        this.text2 = new BMF.BitmapTextblock3D(this.gl, this.font, "360, no pivot.");
-        this.text2.xform.pos = vec3.fromValues(-3,2.5,0);
-        this.text2.xform.scale = vec3.fromValues(10,10,10);
-        this.text2.hAlignment = BMF.HAlignment.CENTER;
-
-        this.text3 = new BMF.BitmapTextblock3D(this.gl, this.font, "90, center pivot.");
-        this.text3.xform.pos = vec3.fromValues(0,2.5,0);
-        this.text3.xform.scale = vec3.fromValues(10,10,10);
-        this.text3.hAlignment = BMF.HAlignment.CENTER;
-
         this.text4 = new BMF.BitmapTextblock3D(this.gl, this.font, "180, center pivot.");
         this.text4.xform.pos = vec3.fromValues(3,2.5,0);
         this.text4.xform.scale = vec3.fromValues(10,10,10);
         this.text4.hAlignment = BMF.HAlignment.CENTER;
 
-        this.text5 = new BMF.BitmapTextblock3D(this.gl, this.font, "180, no pivot.");
-        this.text5.xform.pos = vec3.fromValues(6,2.5,0);
-        this.text5.xform.scale = vec3.fromValues(10,10,10);
-        this.text5.hAlignment = BMF.HAlignment.CENTER;
+        this.texturedQuad = texturedQuadFactory(this.gl, simpleTexturedQuadShapeShader_vs, discard_simpleTexturedQuadShapeShader_fs);
+
+        this.dragWidget = new DragWidgetTextured(this.gl);
+        this.dragWidget.setLocalPosition(vec3.fromValues(1,1,0));
 
         let bLargeNumber = false;
         if(bLargeNumber)
@@ -126,24 +112,6 @@ class Game
         makeButtonsChild(this.layer2Buttons, this.layer3Buttons);
         makeButtonsChild(this.layer3Buttons, this.layer4Buttons);
 
-        this.openbtn_360_centerpivot = new CubeRadialButton(this.gl);
-        makeButtonsChild([this.openbtn_360_centerpivot], this.layer1Buttons);
-        this.radialPicker_360_centerpivot = new RadialPicker(this.openbtn_360_centerpivot);
-        this.radialPicker_360_centerpivot.setLocalPosition(vec3.fromValues(-6,0,0));
-        // this.radialPicker_360_centerpivot.bCenterButtonsAtPivot = true;
-
-        this.openbtn_360_nopivot = new CubeRadialButton(this.gl);
-        makeButtonsChild([this.openbtn_360_nopivot], this.layer1Buttons);
-        this.radialPicker_360_nopivot = new RadialPicker(this.openbtn_360_nopivot);
-        this.radialPicker_360_nopivot.setLocalPosition(vec3.fromValues(-3,0,0));
-        this.radialPicker_360_nopivot.bCenterButtonsAtPivot = false;
-
-        this.openbtn_90_centerpivot = new CubeRadialButton(this.gl);
-        makeButtonsChild([this.openbtn_90_centerpivot], this.layer1Buttons);
-        this.radialPicker_90_centerpivot = new RadialPicker(this.openbtn_90_centerpivot, 90);
-        this.radialPicker_90_centerpivot.setLocalPosition(vec3.fromValues(0,0,0));
-        this.radialPicker_90_centerpivot.startItemDir = vec3.fromValues(1,0,0);
-
         this.openbtn_180_centerpivot = new CubeRadialButton(this.gl);
         makeButtonsChild([this.openbtn_180_centerpivot], this.layer1Buttons);
         this.radialPicker_180_centerpivot = new RadialPicker(this.openbtn_180_centerpivot, 180);
@@ -151,12 +119,6 @@ class Game
         // this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(1,0,0);
         this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(0,-1,0);
 
-        this.openbtn_180_nopivot = new CubeRadialButton(this.gl);
-        makeButtonsChild([this.openbtn_180_nopivot], this.layer1Buttons);
-        this.radialPicker_180_nopivot = new RadialPicker(this.openbtn_180_nopivot, 180);
-        this.radialPicker_180_nopivot.setLocalPosition(vec3.fromValues(6,0,0));
-        this.radialPicker_180_nopivot.startItemDir = vec3.fromValues(1,0,0);
-        this.radialPicker_180_nopivot.bCenterButtonsAtPivot = false;
 
         //////////////////////////////
         
@@ -174,6 +136,7 @@ class Game
             montserratFontWhite : new EmeraldUtils.Texture(gl, "../shared_resources/Montserrat_ss_alpha_white_power2.png"),
             montserratFontBlack : new EmeraldUtils.Texture(gl, "../shared_resources/Montserrat_ss_alpha_black_power2.png"),
             montserratFont : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png"),
+            depad : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Icons/DepadIcon.png"),
         }
     }
 
@@ -181,6 +144,8 @@ class Game
     {
         document.addEventListener('keydown', this.handleKeyDown.bind(this), /*useCapture*/ false);
         document.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
+        document.addEventListener('mousemove', this.handleMouseMove.bind(this), false);
+        document.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
         document.addEventListener('wheel', this.handleMouseWheel.bind(this), false);
 
         this.glCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
@@ -242,8 +207,20 @@ class Game
         this.notifyInputDownEvent(e);
     }
 
+    handleMouseMove(e)
+    {
+        this.notifyInputMoveEvent(e);        
+    }
+
+    handleMouseUp(e)
+    {
+        this.notifyInputUpEvent(e);
+    }
+
     notifyInputDownEvent(e)
     {
+        this.dragWidget.notifyInputDownEvent(e, this.glCanvas, this.camera);
+
         // canvas click will only happen when click is released
         let elementClicked = document.elementFromPoint(e.clientX, e.clientY);
         if(elementClicked)
@@ -266,8 +243,8 @@ class Game
                     let fractionHeight = y / canvasHalfHeight;
                     
                     let aspect = canvas.clientWidth / canvas.clientHeight;
-                    let orthoHalfHeight = this.orthoCameraHeight / 2.0
-                    let orthoHalfWidth = (aspect * this.orthoCameraHeight) / 2.0; 
+                    let orthoHalfHeight = this.camera.orthoHeight / 2.0
+                    let orthoHalfWidth = (aspect * this.camera.orthoHeight) / 2.0; 
         
                     let numCameraUpUnits = fractionHeight * orthoHalfHeight;
                     let numCameraRightUnits = fractionWidth * orthoHalfWidth;
@@ -299,18 +276,25 @@ class Game
                 let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
                 vec3.normalize(rayDir, rayDir);
 
-                this.radialPicker_360_centerpivot.hitTest(this.rayStart, rayDir);
-                this.radialPicker_360_nopivot.hitTest(this.rayStart, rayDir);
-                this.radialPicker_90_centerpivot.hitTest(this.rayStart, rayDir);
                 this.radialPicker_180_centerpivot.hitTest(this.rayStart, rayDir);
-                this.radialPicker_180_nopivot.hitTest(this.rayStart, rayDir);
+                // this.dragWidget.hitTest(this.rayStart, rayDir);
             }
         }
     }
 
+    notifyInputMoveEvent(e)
+    {
+        this.dragWidget.notifyInputMoveEvent(e, this.glCanvas, this.camera);
+    }
+
+    notifyInputUpEvent(e)
+    {
+        this.dragWidget.notifyInputUpEvent(e, this.glCanvas, this.camera);
+    }
+
     updateZoom(normalizedY)
     {
-        this.orthoCameraHeight = this.orthoCameraHeight + normalizedY * this.zoomSpeed;
+        this.camera.orthoHeight = this.camera.orthoHeight + normalizedY * this.zoomSpeed;
     }
 
     handleMouseWheel(e)
@@ -344,10 +328,12 @@ class Game
     handleTouchMove(event)
     {
         event.preventDefault(); //stop mouse event
+        this.dragWidget.notifyInputMoveEvent(event);
     }
     handleTouchCancel(event)
     {
         event.preventDefault(); //stop mouse event
+        this.dragWidget.notifyInputUpEvent(event);
     }
 
 
@@ -408,7 +394,7 @@ class Game
         let aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
         let perspectiveMat = null;
-        if(this.camera.enableOrthoMode) { perspectiveMat = this.camera.getOrtho(aspect * this.orthoCameraHeight, this.orthoCameraHeight);}
+        if(this.camera.enableOrthoMode) { perspectiveMat = this.camera.getOrtho(aspect * this.camera.orthoHeight, this.camera.orthoHeight);}
         else                            { perspectiveMat = this.camera.getPerspective(aspect); }
 
         let viewMat = this.camera.getView();
@@ -430,16 +416,17 @@ class Game
         }
 
         this.text_instructions1.render(perspectiveMat, viewMat);
-        this.text1.render(perspectiveMat, viewMat);
-        this.text2.render(perspectiveMat, viewMat);
-        this.text3.render(perspectiveMat, viewMat);
         this.text4.render(perspectiveMat, viewMat);
-        this.text5.render(perspectiveMat, viewMat);
-        this.radialPicker_360_centerpivot.render(perspectiveMat, viewMat);
-        this.radialPicker_360_nopivot.render(perspectiveMat, viewMat);
-        this.radialPicker_90_centerpivot.render(perspectiveMat, viewMat);
         this.radialPicker_180_centerpivot.render(perspectiveMat, viewMat);
-        this.radialPicker_180_nopivot.render(perspectiveMat, viewMat);
+
+        let quadModelMat = mat4.create();
+        this.texturedQuad.bindBuffers();
+        this.texturedQuad.bindTexture(gl.TEXTURE0, this.textures.depad.glTextureId, this.texturedQuad.shader.uniforms.texSampler);
+        this.texturedQuad.updateShader(quadModelMat, viewMat, perspectiveMat);
+        //this.texturedQuad.render();
+
+        this.dragWidget.render(viewMat, perspectiveMat);
+
 
         if(!this.bStopTicks)
         {
