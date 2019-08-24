@@ -6,7 +6,7 @@ import * as EmeraldUtils from "../EmeraldUtils/emerald-opengl-utils.js";
 /** Widget that reacts to being moved by updating its local position to the moved location */
 export class DragWidget extends SceneNode
 {
-    constructor()
+    constructor(bAutoRegisterToEvents = false, canvas = null, camera = null, stopTouchesFromInvokingMouseEvents = true)
     {
         super();
         this.bDragging = false;
@@ -22,7 +22,28 @@ export class DragWidget extends SceneNode
         this._scaledUpBuffer = vec3.fromValues(0,0,0);
         this._scaledRightBuffer = vec3.fromValues(0,0,0);
 
+        this.stopTouchesFromInvokingMouseEvents = stopTouchesFromInvokingMouseEvents;
+        if(bAutoRegisterToEvents && canvas && camera)
+        {
+            this.canvas = canvas;
+            this.camera = camera;
+            document.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
+            document.addEventListener('mousemove', this.handleMouseMove.bind(this), false);
+            document.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
+            canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+            canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+            canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+            // this.glCanvas.addEventListener('touchcancel', this.handleTouchCancel.bind(this), false);
+        }
     }
+
+    //these handlers can be optionally bound; if not boudn then user will be responsible for calling notifies
+    handleMouseDown(e) { this.notifyInputDownEvent(e, this.canvas, this.camera);}
+    handleMouseMove(e) { this.notifyInputMoveEvent(e);}
+    handleMouseUp(e)   { this.notifyInputUpEvent(e);}
+    handleTouchStart(e){ if(this.stopTouchesFromInvokingMouseEvents) { e.preventDefault();} this.notifyInputDownEvent(e,this.canvas, this.camera);}
+    handleTouchMove(e) { if(this.stopTouchesFromInvokingMouseEvents) { e.preventDefault();} this.notifyInputMoveEvent(e);}
+    handleTouchEnd(e)  { if(this.stopTouchesFromInvokingMouseEvents) { e.preventDefault();} this.notifyInputUpEvent(e);}
 
     v_rayHitTest(rayStart, rayDir){console.log("draggable did not implement hittest virtual", rayStart, rayDir)} //implement this to do hit tests
 
@@ -144,9 +165,9 @@ export class DragWidget extends SceneNode
 
 export class DragWidgetTextured extends DragWidget
 {
-    constructor(gl)
+    constructor(gl, bAutoRegisterHandlers = false, canvas = null, camera = null)
     {
-        super();
+        super(bAutoRegisterHandlers, canvas, camera);
         this.gl = gl;
 
         this.textures = this._createTextures(this.gl);
