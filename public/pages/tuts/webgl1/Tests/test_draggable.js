@@ -204,23 +204,24 @@ class Game
 
     handleMouseDown(e)
     {
+        this.dragWidget.notifyInputDownEvent(e, this.glCanvas, this.camera);
         this.notifyInputDownEvent(e);
     }
 
     handleMouseMove(e)
     {
+        this.dragWidget.notifyInputMoveEvent(e, this.glCanvas, this.camera);
         this.notifyInputMoveEvent(e);        
     }
 
     handleMouseUp(e)
     {
+        this.dragWidget.notifyInputUpEvent(e, this.glCanvas, this.camera);
         this.notifyInputUpEvent(e);
     }
 
     notifyInputDownEvent(e)
     {
-        this.dragWidget.notifyInputDownEvent(e, this.glCanvas, this.camera);
-
         // canvas click will only happen when click is released
         let elementClicked = document.elementFromPoint(e.clientX, e.clientY);
         if(elementClicked)
@@ -284,12 +285,12 @@ class Game
 
     notifyInputMoveEvent(e)
     {
-        this.dragWidget.notifyInputMoveEvent(e, this.glCanvas, this.camera);
+        
     }
 
     notifyInputUpEvent(e)
     {
-        this.dragWidget.notifyInputUpEvent(e, this.glCanvas, this.camera);
+        
     }
 
     updateZoom(normalizedY)
@@ -307,6 +308,7 @@ class Game
     handleTouchEnd(event)
     {
         event.preventDefault(); //stop mouse event
+        this.dragWidget.notifyInputUpEvent(event);
 
         for(const touch of event.changedTouches)
         {
@@ -318,6 +320,7 @@ class Game
     {
         event.preventDefault(); //stop mouse event
 
+        this.dragWidget.notifyInputDownEvent(event, this.glCanvas, this.camera);
         for(const touch of event.changedTouches)
         {   
             // console.log("added touch", touch.identifier);
@@ -333,7 +336,7 @@ class Game
     handleTouchCancel(event)
     {
         event.preventDefault(); //stop mouse event
-        this.dragWidget.notifyInputUpEvent(event);
+        
     }
 
 
