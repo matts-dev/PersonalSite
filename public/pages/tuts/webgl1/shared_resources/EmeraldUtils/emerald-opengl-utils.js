@@ -687,6 +687,7 @@ export class Camera
         this.enableInput = true;
         this.enableMouseFollow = false;
         this.enableOrthoMode = false;
+        this.orthoHeight = 10;
         
         //perspective fields
         this.FOV_degrees = 45 * (Math.PI/180);
@@ -824,6 +825,71 @@ export class Camera
         //set target to be right in front of the camera's position
         let target = vec3.add(vec3.create(), this.position, this.forward);
         return mat4.lookAt(mat4.create(), this.position, target, this.up);
+    }
+
+    generateClickedRay(inputEvent, canvas)
+    {
+        let elementClicked = document.elementFromPoint(inputEvent.clientX, inputEvent.clientY);
+        if(elementClicked)
+        {
+            let rayEnd = null;
+            let rayStart = null;
+
+            if(elementClicked == canvas)
+            {
+                let canvasHalfWidth = canvas.clientWidth / 2.0;
+                let canvasHalfHeight = canvas.clientHeight / 2.0;
+    
+                //x-y relative to center of canvas; assuming 0 padding
+                let x = (inputEvent.clientX - canvas.offsetLeft) - (canvasHalfWidth);
+                let y = -((inputEvent.clientY - canvas.offsetTop) - (canvasHalfHeight));
+    
+                let fractionWidth = x / canvasHalfWidth;
+                let fractionHeight = y / canvasHalfHeight;
+
+                let aspect = canvas.clientWidth / canvas.clientHeight;
+
+                rayStart = vec3.clone(this.position);
+                if(this.enableOrthoMode)
+                {
+                    let orthoHalfHeight = this.orthoHeight / 2.0
+                    let orthoHalfWidth = (aspect * this.orthoHeight) / 2.0; 
+        
+                    let numCameraUpUnits = fractionHeight * orthoHalfHeight;
+                    let numCameraRightUnits = fractionWidth * orthoHalfWidth;
+        
+                    { //calculate start point
+                        let scaledCamUp = vec3.clone(this.up);
+                        let scaledCamRight = vec3.clone(this.right);
+            
+                        vec3.scale(scaledCamUp, scaledCamUp, numCameraUpUnits);
+                        vec3.scale(scaledCamRight, scaledCamRight, numCameraRightUnits);
+            
+                        vec3.add(rayStart, rayStart, scaledCamUp);
+                        vec3.add(rayStart, rayStart, scaledCamRight);
+                    }
+        
+                    rayEnd = vec3.clone(rayStart);
+                    vec3.add(rayEnd, rayEnd, this.forward);
+                }
+                else //perspective ray 
+                {
+                    //#TODO generate perspective ray 
+                }
+            }
+
+            if(rayEnd && rayStart)
+            {
+                let rayDir = vec3.sub(vec3.create(), rayEnd, rayStart);
+                vec3.normalize(rayDir, rayDir);
+
+                return {
+                    rayStart : rayStart,
+                    rayDir : rayDir
+                }
+            }
+        }
+        return null;
     }
 
     tick(deltaTimeSec)
