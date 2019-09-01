@@ -121,7 +121,7 @@ class Game
             {
                 parentBtn.childButtons = childButtons;
             }
-        };
+        }
         makeButtonsChild(this.layer1Buttons, this.layer2Buttons);
         makeButtonsChild(this.layer2Buttons, this.layer3Buttons);
         makeButtonsChild(this.layer3Buttons, this.layer4Buttons);

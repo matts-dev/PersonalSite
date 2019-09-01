@@ -7,6 +7,7 @@ import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_Bitm
 import { CubeRadialButton, RadialPicker } from "../shared_resources/EmeraldUtils/radial_picker.js";
 import { mat4, vec3 } from "../shared_resources/gl-matrix_esm/index.js";
 import { DragWidgetTextured} from "../shared_resources/EmeraldUtils/draggable.js";
+import { PianoManager } from "../shared_resources/EmeraldUtils/music_tools.js";
 
 
 //////////////////////////////////////////////////////
@@ -87,6 +88,12 @@ class Game
         this.dragWidget.setLocalPosition(vec3.fromValues(1,1,0));
 
         this.dragWidgetSelfRegister = new DragWidgetTextured(this.gl, true, this.glCanvas, this.camera);
+
+        this.pianoManager = new PianoManager(this.gl, this.glCanvas, null, this.camera);
+        this.pianoManager.setLocalPosition(vec3.fromValues(-5, 0, 0));
+
+        this.pianoManager2 = new PianoManager(this.gl, this.glCanvas, null, this.camera);
+        this.pianoManager2.setLocalPosition(vec3.fromValues(-5, -2, 0));
 
         let bLargeNumber = false;
         if(bLargeNumber)
@@ -290,7 +297,7 @@ class Game
         
     }
 
-    notifyInputUpEvent(e)
+    notifyInputUpEvent(/*e*/)
     {
         
     }
@@ -432,6 +439,9 @@ class Game
 
         this.dragWidget.render(viewMat, perspectiveMat);
         this.dragWidgetSelfRegister.render(viewMat, perspectiveMat);
+
+        this.pianoManager.render(viewMat, perspectiveMat);
+        this.pianoManager2.render(viewMat, perspectiveMat);
 
         if(!this.bStopTicks)
         {

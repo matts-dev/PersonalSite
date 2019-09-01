@@ -31,8 +31,10 @@ export class SceneNode
     /////////////////////////
     //virtuals
     /////////////////////////
-    /** Called when resolving dirty flag */
+    /** Called when resolving dirty flag. For updating child local caches only; cleaning is not complete when this method is called. */
     v_ChildUpdateCachedPostClean() {}
+    /** A safe method to query things that have a dirty flag immediately after cleaned*/
+    v_CleanComplete() {}
     
     /////////////////////////
     // Base functionality
@@ -53,6 +55,20 @@ export class SceneNode
         }
         
         return this._getCachedWorldMat();
+    }
+
+    getLocalModelMat()
+    {
+        if(this.isDirty) { this._cleanState();}
+        return mat4.copy(mat4.create(), this.cached_LocalModelMat);
+    }
+
+    requestClean()
+    {
+        if(this.isDirty())
+        {
+            this._cleanState();
+        }
     }
 
     getLocalPosition(out) { return vec3.copy(out, this._localXform.pos); }
@@ -147,6 +163,8 @@ export class SceneNode
 
             this._bDirty = false;
             this.bForceNextClean = false;
+
+            this.v_CleanComplete();
         }
 
         //return true if recalculation happened

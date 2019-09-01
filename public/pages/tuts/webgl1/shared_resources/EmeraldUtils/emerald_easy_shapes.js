@@ -228,21 +228,32 @@ export function texturedCubeFactory(gl)
         simpleTexturedShapeShader_vs, simpleTexturedShapeShader_fs,
         ["projection", "view_model", "normalMatrix", "texSampler"]);
 
-    texturedCube.updateShader = function(cubePosition, viewMat, projectionMat){
+    // leavving below commented out in case this was in use in another test; but find references didn't turn up anything.
+    // texturedCube.updateShader = function(cubePosition, viewMat, projectionMat){
+    //     let gl = this.gl;
+    //     gl.useProgram(this.shader.program);
+    //     let modelMat = mat4.create();
+    //     mat4.translate(modelMat, modelMat, cubePosition);
+    //     let view_model = mat4.multiply(mat4.create(), viewMat, modelMat)
+    //     gl.uniformMatrix4fv(this.shader.uniforms.view_model, false, view_model);
+    //     let normMatrix = mat4.invert(mat4.create(), modelMat);
+    //     mat4.transpose(normMatrix, normMatrix);
+    //     gl.uniformMatrix4fv(this.shader.uniforms.normalMatrix, false, normMatrix);
+    //     //this step shouldn't be done for every cube
+    //     gl.uniformMatrix4fv(this.shader.uniforms.projection, false, projectionMat);
+    // }
+
+    texturedCube.updateShader = function(modelMat, viewMat, projectionMat){
         let gl = this.gl;
 
         gl.useProgram(this.shader.program);
-        let modelMat = mat4.create();
-        mat4.translate(modelMat, modelMat, cubePosition);
         
-        let view_model = mat4.multiply(mat4.create(), viewMat, modelMat)
+        
+        let view_model = mat4.multiply(mat4.create(), viewMat, modelMat);
         gl.uniformMatrix4fv(this.shader.uniforms.view_model, false, view_model);
         
-        let normMatrix = mat4.invert(mat4.create(), modelMat);
-        mat4.transpose(normMatrix, normMatrix);
-        gl.uniformMatrix4fv(this.shader.uniforms.normalMatrix, false, normMatrix);
-
-        //this step shouldn't be done for every cube
+        // gl.uniformMatrix4fv(this.shader.uniforms.model, false, modelMat);
+        // gl.uniformMatrix4fv(this.shader.uniforms.view, false, viewMat);
         gl.uniformMatrix4fv(this.shader.uniforms.projection, false, projectionMat);
     }
 
