@@ -2,7 +2,7 @@ import * as EmeraldUtils from "./emerald-opengl-utils.js";
 import { vec2, vec3, vec4 } from "../gl-matrix_esm/index.js";
 import { SceneNode } from "./3d_utils.js";
 import * as utils2d from "./2d_utils.js";
-import { coloredCubeFactory } from "./emerald_easy_shapes.js";
+import { coloredCubeFactory, texturedCubeFactory} from "./emerald_easy_shapes.js";
 
 export class RadialButton extends SceneNode
 {
@@ -40,8 +40,9 @@ export class RadialButton extends SceneNode
     setToggled(bIsToggled){this._bIsToggled = bIsToggled;}
     getButtonRadius() 
     {
-        let worldXform = this.getWorldMat();
-        let transformedRadiusVec = vec4.transformMat4(vec4.create(), this.radiusVector, worldXform);
+        // let xform = this.getWorldMat();
+        let xform = this.getLocalModelMat();
+        let transformedRadiusVec = vec4.transformMat4(vec4.create(), this.radiusVector, xform);
         return vec4.length(transformedRadiusVec);
     }
 }
@@ -387,6 +388,74 @@ export class CubeRadialButton extends RadialButton
     {
         this.clickCube.updateShader(this.getWorldMat(), view_mat, projection_mat, this.isToggled() ? this.toggleColor : this.bgColor);
         this.clickCube.bindBuffers();
+        this.clickCube.render();
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+// Example Radial Tools
+////////////////////////////////////////////////////////////////////
+
+class TexturedCubeStatics 
+{
+    constructor(gl)
+    {
+        this.clickCube = texturedCubeFactory(gl);
+    }
+}
+let static_texturedClickCubePerGlInstance = new Map();
+function getTexturedCubeStatics(gl)
+{
+    if(!static_texturedClickCubePerGlInstance.has(gl))
+    {
+        let pianoSettingsStatics = new TexturedCubeStatics(gl);
+        static_texturedClickCubePerGlInstance.set(gl, pianoSettingsStatics);
+    }
+    return static_texturedClickCubePerGlInstance.get(gl);
+}
+
+
+export class TexturedCubeRadialButton extends RadialButton
+{
+    constructor(gl, textureObj)
+    {
+        super();
+
+        let statics = getTexturedCubeStatics(gl);
+
+        this.gl = gl;
+        this.clickCube = statics.clickCube;
+        this.bgColor = vec3.fromValues(1,1,1);
+        this.toggleColor = vec3.fromValues(1,0,0);
+        this.desiredScale = vec3.fromValues(0.4, 0.4, 0.4);
+        this.setLocalScale(this.desiredScale);
+        this.customActionFunction = function(){console.log("TexturedCubeRadialButton custom action function; please override")}
+        this.textureObj = textureObj;
+    }
+
+    hitTest(rayStart, rayDir)
+    {
+        let inverseXform = this.getInverseWorldMat();
+
+        let transformedRayStart = vec4.fromValues(rayStart[0], rayStart[1], rayStart[2], 1.0); //this is a point so 4th coordinate is a 1
+        vec4.transformMat4(transformedRayStart, transformedRayStart, inverseXform);
+
+        let transformedRayDir = vec4.fromValues(rayDir[0], rayDir[1], rayDir[2], 0.0);   //this is a dir, 4th coordinate is 0
+        vec4.transformMat4(transformedRayDir, transformedRayDir, inverseXform);
+
+        //the inverse transform will handle scaling etc; so the fast-box-collision test must use the normalized cube units
+        let hit_t = EmeraldUtils.rayTraceFastAABB(-0.5, 0.5, -0.5, 0.5, -0.5, 0.5, transformedRayStart, transformedRayDir);
+        if(hit_t)
+        {
+            return true;
+        } 
+        
+    }
+    render(projection_mat, view_mat)
+    {
+        this.clickCube.bindBuffers();
+        this.clickCube.updateShader(this.getWorldMat(), view_mat, projection_mat, this.isToggled() ? this.toggleColor : this.bgColor);
+        this.clickCube.bindTexture(this.gl.TEXTURE0, this.textureObj.glTextureId, this.clickCube.shader.uniforms.texSampler);
         this.clickCube.render();
     }
 }

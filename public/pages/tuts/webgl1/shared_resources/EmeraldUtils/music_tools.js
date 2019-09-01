@@ -1,14 +1,10 @@
-import {vec3} from "../gl-matrix_esm/index.js"
-import {vec4} from "../gl-matrix_esm/index.js"
-import {quat} from "../gl-matrix_esm/index.js"
-import {mat4} from "../gl-matrix_esm/index.js"
-import * as key from "../EmeraldUtils/browser_key_codes.js";
-import * as EmeraldUtils from "./emerald-opengl-utils.js"
-import {Transform} from "./emerald-opengl-utils.js"
-import { coloredCubeFactory, coloredCubeFactory_pivoted} from "./emerald_easy_shapes.js";
-import {RadialPicker, RadialButton} from "./radial_picker.js";
+import { mat4, vec3, vec4 } from "../gl-matrix_esm/index.js";
 import { SceneNode } from "./3d_utils.js";
-
+import * as EmeraldUtils from "./emerald-opengl-utils.js";
+import { Transform } from "./emerald-opengl-utils.js";
+import { coloredCubeFactory_pivoted } from "./emerald_easy_shapes.js";
+import {DragWidgetTextured} from "./draggable.js";
+import {RadialPicker, CubeRadialButton, TexturedCubeRadialButton} from "./radial_picker.js";
 
 
 
@@ -432,10 +428,15 @@ export class Piano
     _getBaseXform()
     {
         let centerXform = mat4.create();
-        mat4.translate(centerXform, centerXform, vec3.fromValues(-this.width / 2, 0.5, 0));
+        mat4.translate(centerXform, centerXform, vec3.fromValues(-this.width / 2, 1, 0));
 
         let baseXform = this.xform.toMat4(mat4.create());
         mat4.mul(baseXform, baseXform, centerXform);
+
+        if(this.parentXform)
+        {
+            mat4.mul(baseXform, this.parentXform, baseXform);
+        }
 
         return baseXform;
     }
@@ -524,21 +525,273 @@ export class Piano
 
 }
 
-class PianoSettingsWidget extends SceneNode
+class CanvasEventHandler
 {
+    constructor(glCanvas)
+    {
+        this.glCanvas = glCanvas;
+        this._bindCallbacks();
+        this.subscribers = new Set(); //iteration complexity is probably either o(n) for tree implementations or o(n + m) for hashmap implemenations
+        this.camera = null;
+    }
+
+    _bindCallbacks()
+    {
+        document.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
+        document.addEventListener('mousemove', this.handleMouseMove.bind(this), false);
+        document.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
+
+        this.glCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+        this.glCanvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+        this.glCanvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+        this.glCanvas.addEventListener('touchcancel', this.handleTouchCancel.bind(this), false);
+        
+    }
+
+    addSubscriber(pianoNode){ this.subscribers.add(pianoNode);}
+    deleteSubscriber(pianoNode){ this.subscribers.delete(pianoNode);}
+
+    setCamera(camera)
+    {
+        this.camera = camera;
+    }
+
+    handleMouseDown(e) { this.notifyInputDownEvent(e); }
+    handleMouseMove(e) { this.notifyInputMoveEvent(e);}
+    handleMouseUp(e) { this.notifyInputUpEvent(e); }
+    handleTouchMove(event)  { event.preventDefault(); /*stop mouse event*/}
+    handleTouchCancel(event) { event.preventDefault(); /*stop mouse event*/}
+    handleTouchEnd(event)
+    {
+        event.preventDefault(); /*stop mouse event*/
+        // for(const touch of event.changedTouches) { /* console.log("released touch", touch.identifier);*/ }
+    }
+    handleTouchStart(event)
+    {
+        event.preventDefault(); /*stop mouse event*/
+        for(const touch of event.changedTouches)
+        {   
+            // console.log("added touch", touch.identifier);
+            this.notifyInputDownEvent(touch);
+        }
+    }
+
+    notifyInputDownEvent(e)
+    {
+        // canvas click will only happen when click is released
+        let elementClicked = document.elementFromPoint(e.clientX, e.clientY);
+        if(elementClicked)
+        {
+            if(elementClicked == this.glCanvas)
+            {
+                // this.handleCanvasClicked(e);
+                if(this.camera.enableOrthoMode)
+                {
+                    let canvas = this.glCanvas;
+                    let canvasHalfWidth = canvas.clientWidth / 2.0;
+                    let canvasHalfHeight = canvas.clientHeight / 2.0;
+        
+                    //x-y relative to center of canvas; assuming 0 padding
+                    let x = (e.clientX - canvas.offsetLeft) - (canvasHalfWidth);
+                    let y = -((e.clientY - canvas.offsetTop) - (canvasHalfHeight));
+                    // console.log(x, y);
+        
+                    let fractionWidth = x / canvasHalfWidth;
+                    let fractionHeight = y / canvasHalfHeight;
+                    
+                    let aspect = canvas.clientWidth / canvas.clientHeight;
+                    let orthoHalfHeight = this.camera.orthoHeight / 2.0
+                    let orthoHalfWidth = (aspect * this.camera.orthoHeight) / 2.0; 
+        
+                    let numCameraUpUnits = fractionHeight * orthoHalfHeight;
+                    let numCameraRightUnits = fractionWidth * orthoHalfWidth;
+        
+                    let rayStart = vec3.clone(this.camera.position);
+        
+                    { //calculate start point
+                        let scaledCamUp = vec3.clone(this.camera.up);
+                        let scaledCamRight = vec3.clone(this.camera.right);
+            
+                        vec3.scale(scaledCamUp, scaledCamUp, numCameraUpUnits);
+                        vec3.scale(scaledCamRight, scaledCamRight, numCameraRightUnits);
+            
+                        vec3.add(rayStart, rayStart, scaledCamUp);
+                        vec3.add(rayStart, rayStart, scaledCamRight);
+                    }
+        
+                    let rayEnd = vec3.clone(rayStart);
+                    vec3.add(rayEnd, rayEnd, this.camera.forward);
+                    
+                    this.rayStart = rayStart;
+                    this.rayEnd = rayEnd;
+                }
+            }
+
+            //immediately do ray test; don't wait as we may have chords
+            if(this.rayEnd && this.rayStart)
+            {
+                let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
+                vec3.normalize(rayDir, rayDir);
+
+                for(let subscriberNode of this.subscribers)
+                {
+                    subscriberNode.hitTest(this.rayStart, rayDir);
+                }
+            }
+        }
+    }
+    notifyInputMoveEvent(e)
+    {
+        
+    }
+    notifyInputUpEvent(e)
+    {
+        
+    }
+}
+
+/** A wrapper for pianos that is a scene node */
+let static_canvasToEventHandlers = new Map();
+function getEventHandler(glCanvas)
+{
+    if(!static_canvasToEventHandlers.has(glCanvas))
+    {
+        console.log("creating static event handler")
+        let eventHandler = new CanvasEventHandler(glCanvas);
+        static_canvasToEventHandlers.set(glCanvas, eventHandler);
+    }
+    return static_canvasToEventHandlers.get(glCanvas);
+}
+
+
+class PianoNode extends SceneNode
+{
+    constructor(gl, glCanvas, piano, camera)
+    {
+        super();
+        this.gl = gl;
+        this.piano = piano;
+
+        let eventHandler = getEventHandler(glCanvas);
+
+        eventHandler.addSubscriber(this);
+        eventHandler.setCamera(camera);
+    }
+
+    v_CleanComplete()
+    {
+        if(this.piano)
+        {
+            this.piano.parentXform = this.getWorldMat();
+        }
+    }
+
+    hitTest(rayStart, rayDir)
+    {
+        let clickedKey = this.piano.clickTest(rayStart, rayDir);
+        if(clickedKey)
+        {
+            // this.rayEnd = null;
+            // this.rayStart = null;
+        }
+    }
+    
+    render(viewMat, perspectiveMat)
+    {
+        this.requestClean();
+        this.piano.render(viewMat, perspectiveMat);
+    }
+}
+
+
+class PianoSettingsStatics
+{
+    constructor(gl)
+    {
+        this.gl = gl;
+        this.textures = {
+            gearIcon : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Icons/GearIcon.png"),
+        }
+    }
+}
+
+let static_PianoSettingsPerGLContext = new Map();
+function getPianoSettingsStatics(gl)
+{
+    if(!static_PianoSettingsPerGLContext.has(gl))
+    {
+        console.log("creating static piano settings statics");
+        let pianoSettingsStatics = new PianoSettingsStatics(gl);
+        static_PianoSettingsPerGLContext.set(gl, pianoSettingsStatics);
+    }
+    return static_PianoSettingsPerGLContext.get(gl);
+}
+
+class PianoSettingsWidget extends RadialPicker
+{
+    static makeButtons(gl)
+    {
+        let statics = getPianoSettingsStatics(gl)
+        let openButton = new TexturedCubeRadialButton(gl, statics.textures.gearIcon);
+        // let openButton = new CubeRadialButton(gl, statics.textures.gearIcon);
+        
+        //temporary create test buttons
+        let testButtons = [];
+        for(let btn = 0; btn < 5; ++btn)
+        {
+            testButtons.push(new CubeRadialButton(gl));
+        }
+        openButton.childButtons = testButtons;
+
+        return openButton;
+    }
+
+    constructor(gl, glCanvas)
+    {
+        super(PianoSettingsWidget.makeButtons(gl), 180);
+
+        let eventHandler = getEventHandler(glCanvas)
+        eventHandler.addSubscriber(this);
+
+    }
+
+
+    render(viewMat, perspectiveMat)
+    {
+        this.requestClean();
+        super.render(perspectiveMat, viewMat); //notice flipping of matrices; I should have been consistent. :\
+    }
 
 }
 
-export class PianoManager
+export class PianoManager extends SceneNode
 {
-    constructor(gl, soundPrefixLocation="../shared_resources/Sounds/PianoKeySounds/", numOctaves=2)
+    constructor(gl, glCanvas, piano, camera)
     {
-        this.dragwidget = new DragWidget(gl);
+        super();
 
-        this.piano = new Piano(gl, soundPrefixLocation, numOctaves);
-        this.piano.setParent(this.dragwidget);
+        if (!glCanvas || !camera) { console.log("Did not proved required parameters to PianoManager")}
+        if (piano == null){ piano = new Piano(gl, "../shared_resources/Sounds/PianoKeySounds/", 1);}
 
-        this.pianoSettings = new PianoSettingsWidget();
+        this.dragwidget = new DragWidgetTextured(gl, true, glCanvas, camera);
+        this.dragwidget.setParent(this);
+
+        this.pianoNode = new PianoNode(gl, glCanvas, piano, camera);
+        this.pianoNode.setParent(this);
+        this.pianoNode.setLocalPosition(vec3.fromValues(2,0,0)); //#TODO make relative to width of drag widget
+        this.pianoNode.setLocalScale(vec3.fromValues(0.25, 0.25, 0.25));
+
+        this.pianoSettings = new PianoSettingsWidget(gl, glCanvas);
         this.pianoSettings.setParent(this.dragwidget);
+        this.pianoSettings.setLocalPosition(vec3.fromValues(3.5,0,0)); //#TODO make relative to piano width and update when parent get dirty
+    }
+
+    render(viewMat, perspectiveMat)
+    {
+        this.requestClean();
+
+        this.dragwidget.render(viewMat, perspectiveMat);
+        this.pianoNode.render(viewMat, perspectiveMat);
+        this.pianoSettings.render(viewMat, perspectiveMat);
     }
 }
