@@ -222,11 +222,14 @@ const simpleTexturedShapeShader_fs = `
         gl_FragColor = texture2D(texSampler, uvCoord);
     }
 `;
-export function texturedCubeFactory(gl)
+export function texturedCubeFactory(gl, vertShaderSrc = simpleTexturedShapeShader_vs, fragShaderSrc = simpleTexturedShapeShader_fs, uniformList = [])
 {
+    let uniforms = ["projection", "view_model", "normalMatrix", "texSampler"];
+    uniforms = uniforms.concat(uniformList);
+
     let texturedCube = new UnitCube3D(gl,
-        simpleTexturedShapeShader_vs, simpleTexturedShapeShader_fs,
-        ["projection", "view_model", "normalMatrix", "texSampler"]);
+        vertShaderSrc, fragShaderSrc,
+        uniforms);
 
     // leavving below commented out in case this was in use in another test; but find references didn't turn up anything.
     // texturedCube.updateShader = function(cubePosition, viewMat, projectionMat){

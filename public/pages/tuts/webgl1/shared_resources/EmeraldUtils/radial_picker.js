@@ -1,9 +1,11 @@
 import * as EmeraldUtils from "./emerald-opengl-utils.js";
-import { vec2, vec3, vec4 } from "../gl-matrix_esm/index.js";
+import { vec2, vec3, vec4, mat4 } from "../gl-matrix_esm/index.js";
 import { SceneNode } from "./3d_utils.js";
 import * as utils2d from "./2d_utils.js";
 import { coloredCubeFactory, texturedCubeFactory} from "./emerald_easy_shapes.js";
 import { fromRotationTranslation } from "../gl-matrix_esm/mat4.js";
+import {TextBlockSceneNode} from "./BitmapFontRendering.js";
+import {Montserrat_BMF} from "./Montserrat_BitmapFontConfig.js";
 
 export class RadialButton extends SceneNode
 {
@@ -396,11 +398,51 @@ export class CubeRadialButton extends RadialButton
 // Example Radial Tools
 ////////////////////////////////////////////////////////////////////
 
+const coloredTexture_vs =
+`
+    attribute vec4 vertPos;
+    attribute vec3 vertNormal;
+    attribute vec2 texUVCoord;
+
+    uniform mat4 model;
+    uniform mat4 view_model;
+    uniform mat4 normalMatrix; //the inverse transpose of the view_model matrix
+    uniform mat4 projection;
+
+    varying highp vec2 uvCoord; //this is like an out variable in opengl3.3+
+
+    void main(){
+        gl_Position = projection * view_model * vertPos;
+        uvCoord = texUVCoord;
+    }
+`;
+
+const coloredTexture_fs = `
+    varying highp vec2 uvCoord;
+    uniform sampler2D texSampler;
+    uniform highp vec3 color;
+
+    void main(){
+        gl_FragColor = texture2D(texSampler, uvCoord);
+        gl_FragColor = gl_FragColor * vec4(color, 1);
+    }
+`;
+
 class TexturedCubeStatics 
 {
     constructor(gl)
     {
-        this.clickCube = texturedCubeFactory(gl);
+        //provide custom shaders so we can change the color of the texture when clicked.
+        this.clickCube = texturedCubeFactory(gl, coloredTexture_vs, coloredTexture_fs, ["color"]);
+
+        this.clickCube.updateShader = function(modelMat, viewMat, projectionMat, color = vec3.fromValues(1,1,1)){
+            let gl = this.gl;
+            gl.useProgram(this.shader.program);
+            let view_model = mat4.multiply(mat4.create(), viewMat, modelMat);
+            gl.uniformMatrix4fv(this.shader.uniforms.view_model, false, view_model);
+            gl.uniformMatrix4fv(this.shader.uniforms.projection, false, projectionMat);
+            gl.uniform3f(this.shader.uniforms.color, color[0], color[1], color[2]);
+        }
     }
 }
 let static_texturedClickCubePerGlInstance = new Map();
@@ -408,8 +450,8 @@ function getTexturedCubeStatics(gl)
 {
     if(!static_texturedClickCubePerGlInstance.has(gl))
     {
-        let pianoSettingsStatics = new TexturedCubeStatics(gl);
-        static_texturedClickCubePerGlInstance.set(gl, pianoSettingsStatics);
+        let textureCubeStatics = new TexturedCubeStatics(gl);
+        static_texturedClickCubePerGlInstance.set(gl, textureCubeStatics);
     }
     return static_texturedClickCubePerGlInstance.get(gl);
 }
@@ -428,8 +470,8 @@ export class TexturedCubeRadialButton extends RadialButton
         this.gl = gl;
         this.clickCube = statics.clickCube;
         this.bgColor = vec3.fromValues(1,1,1);
-        this.toggleColor = vec3.fromValues(1,0,0);
-        // this.desiredScale = vec3.fromValues(0.4, 0.4, 0.4);
+        this.toggleColor = vec3.fromValues(1, 0.9019, 0.6313);
+        // this.toggleColor = vec3.fromValues(1, 1, 0.6313);
         this.desiredScale = vec4.fromValues(1,1,1);
         this.setLocalScale(this.desiredScale);
         this.customActionFunction = function(){console.log("TexturedCubeRadialButton custom action function; please override")}
@@ -461,4 +503,70 @@ export class TexturedCubeRadialButton extends RadialButton
         this.clickCube.bindTexture(this.gl.TEXTURE0, this.textureObj.glTextureId, this.clickCube.shader.uniforms.texSampler);
         this.clickCube.render();
     }
+}
+
+
+let static_TexturedTextButton = new Map();
+export class TexturedTextButton_Statics
+{
+    static get(gl)
+    {
+        if(!static_TexturedTextButton.has(gl))
+        {
+            console.log("creating TexturedTextButton_Statics");
+            let statics = new TexturedTextButton_Statics(gl);
+            static_TexturedTextButton.set(gl, statics);
+        }
+        return static_TexturedTextButton.get(gl);
+    }
+
+    constructor(gl)
+    {
+        this.gl = gl;
+        this.font = new Montserrat_BMF(gl, "../shared_resources/Textures/Fonts/Montserrat_ss_alpha_1024x1024_wb.png");
+        this.font.setFontColor(vec3.fromValues(0,0,0));
+    }
+    
+}
+
+export class TexturedTextButton extends TexturedCubeRadialButton
+{
+    constructor(gl, textureObj, text="", textColor=vec3.fromValues(1,1,1))
+    {
+        super(gl, textureObj);
+
+        let statics = TexturedTextButton_Statics.get(gl);
+
+        this.text = new TextBlockSceneNode(gl, statics.font, text);
+        this.text.setParent(this);
+        this.text.setLocalPosition(vec3.fromValues(0,0,0.6));
+
+        this.updateLayout();
+    }
+
+    updateLayout()
+    {
+        // let radii = this.text.wrappedText.getLocalWidth() / 2;
+        // let localScale = this.text.getLocalScale(vec3.create());    //this correction should probably be done in scene text wrapper
+        // radii = radii * localScale[0];
+        // this.radiusVector = vec4.fromValues(radii, 0, 0, 0);
+        // let calcRadius = this.getButtonRadius();
+
+        let textWidth = this.text.wrappedText.getLocalWidth() / 2;
+
+        let createBorderFactor = 0.05;
+        let textureCubeWidth = 0.5 - (createBorderFactor);
+        let scaleUp = textureCubeWidth / textWidth;
+        scaleUp = scaleUp > 20 ? 20 : scaleUp;
+        this.text.setLocalScale(vec3.fromValues(scaleUp, scaleUp, scaleUp));
+
+    }
+
+    render(projection_mat, view_mat)
+    {
+        this.requestClean();
+        super.render(projection_mat, view_mat);
+        this.text.render(projection_mat, view_mat);
+    }
+
 }
