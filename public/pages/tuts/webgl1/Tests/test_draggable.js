@@ -85,12 +85,13 @@ class Game
         this.texturedQuad = texturedQuadFactory(this.gl, simpleTexturedQuadShapeShader_vs, discard_simpleTexturedQuadShapeShader_fs);
 
         this.dragWidget = new DragWidgetTextured(this.gl);
-        this.dragWidget.setLocalPosition(vec3.fromValues(1,1,0));
+        this.dragWidget.setLocalPosition(vec3.fromValues(5,4, 0));
 
         this.dragWidgetSelfRegister = new DragWidgetTextured(this.gl, true, this.glCanvas, this.camera);
+        this.dragWidgetSelfRegister.setLocalPosition(vec3.fromValues(3,4,0));
 
         this.pianoManager = new PianoManager(this.gl, this.glCanvas, null, this.camera);
-        this.pianoManager.setLocalPosition(vec3.fromValues(-5, 0, 0));
+        this.pianoManager.setLocalPosition(vec3.fromValues(-5, 2, 0));
 
         this.pianoManager2 = new PianoManager(this.gl, this.glCanvas, null, this.camera);
         this.pianoManager2.setLocalPosition(vec3.fromValues(-5, -2, 0));

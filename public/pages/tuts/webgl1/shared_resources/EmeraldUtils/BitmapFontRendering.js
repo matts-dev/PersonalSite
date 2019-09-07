@@ -1,5 +1,6 @@
 import {vec3, mat4} from "../gl-matrix_esm/index.js"
 import {initShaderProgram, Texture, Transform} from "./emerald-opengl-utils.js"
+import { SceneNode } from "./3d_utils.js";
 
 
 
@@ -30,10 +31,13 @@ export const glyphShader_vs =
 
 export const glyphShader_fs = `
     uniform sampler2D texture0;
+    uniform highp vec3 color;
+
     varying highp vec2 uvCoord;
 
     void main(){
         gl_FragColor = texture2D(texture0, uvCoord);
+        gl_FragColor = gl_FragColor * vec4(color, 1.0);
         if(gl_FragColor.a == 0.0) {
             discard;
         }
@@ -57,6 +61,7 @@ export function createGlyphShader(gl)
             model : gl.getUniformLocation(shaderProgram, "model"),
             texSampler : gl.getUniformLocation(shaderProgram, "texture0"),
             flipV : gl.getUniformLocation(shaderProgram, "flipV"),
+            color : gl.getUniformLocation(shaderProgram, "color"),
         }
     }
 }
@@ -110,18 +115,18 @@ export class Glyph
 //https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6
 export const VAlignment = Object.freeze({
     TOP:   Symbol("top"),
-    MIDDLE:  Symbol("center"),
+    CENTER:  Symbol("center"),
     BOTTOM: Symbol("bottom")
 });
 export const HAlignment = Object.freeze({
     LEFT:   Symbol("left"),
-    MIDDLE:  Symbol("center"),
+    CENTER:  Symbol("center"),
     RIGHT: Symbol("right")
 });
 
 export class BitmapTextblock3D
 {
-    constructor(gl, bitMapFont, startText="", x, y, z)
+    constructor(gl, bitMapFont, startText="", x=0, y=0, z=0)
     {
         this.gl = gl;
         this.bitMapFont = bitMapFont;
@@ -183,7 +188,7 @@ export class BitmapTextblock3D
             let sceneModelMat = mat4.create();
             if(this.parentModelMat)
             {
-                mat4.mul(sceneModelMat, this.parentXformMat, sceneModelMat); 
+                mat4.mul(sceneModelMat, this.parentModelMat, sceneModelMat); 
             }
             let textBlockModelMat = this.xform.toMat4(mat4.create());
             mat4.mul(sceneModelMat, sceneModelMat, textBlockModelMat);
@@ -243,6 +248,36 @@ export class BitmapTextblock3D
     }
 }
 
+export class TextBlockSceneNode extends SceneNode
+{
+    constructor(gl, font, text)
+    {
+        super(null);
+        this.wrappedText = new BitmapTextblock3D(this.gl, font, text);
+        this.wrappedText.hAlignment = HAlignment.CENTER;
+        this.wrappedText.vAlignment = VAlignment.CENTER;
+        
+        this.v_CleanComplete();
+        // this.makeDirty();
+        // this.requestClean();
+    }
+
+    v_CleanComplete()
+    {
+        if(this.wrappedText)
+        {
+            this.wrappedText.parentModelMat = this.getWorldMat();
+        }
+    }
+
+    render(projection, view)
+    {
+        this.requestClean();
+        this.wrappedText.render(projection, view);
+    }
+    
+}
+
 export class GlyphRenderer
 {
     /**
@@ -263,6 +298,7 @@ export class GlyphRenderer
         this.width = width;
         this.height = height;
         this.baselineOffsetY = baselineOffsetY;
+        this.color = vec3.fromValues(1,1,1);
 
         this.buffers = this._createBuffers(gl)
     }
@@ -322,7 +358,9 @@ export class GlyphRenderer
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.fontTextureObj.glTextureId);
         gl.uniform1i(this.glyphShader.uniforms.texSampler, 0/*0 corresponds to gl.TEXTURE0*/);
-
+        
+        let renderColor = this.color;
+        gl.uniform3f(this.glyphShader.uniforms.color, renderColor[0], renderColor[1], renderColor[2]);
         gl.uniform1f(this.glyphShader.uniforms.flipV, -1.0);
         gl.uniformMatrix4fv(this.glyphShader.uniforms.projection, false, projection);
         gl.uniformMatrix4fv(this.glyphShader.uniforms.view, false, view);
@@ -370,6 +408,18 @@ export class BitmapFont
             return this.defaultGlyph;
         }
         return glyph
+    }
+
+    setFontColor(newColor = vec3.fromValues(1,1,1))
+    {
+        for(let key in this._glyphTable)
+        {
+            let glyph = this._glyphTable[key]
+            if(glyph)
+            {
+                glyph.color = newColor;
+            }
+        }
     }
 
     _createLookupHashTable()

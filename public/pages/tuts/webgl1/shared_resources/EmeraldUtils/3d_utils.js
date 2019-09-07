@@ -185,26 +185,26 @@ export class SceneNode
 }
 
 /** Used to make non-scene node based classes behave like scene child scene nodes*/
-export class SceneNodeWrapper extends SceneNode
-{
-    constructor(wrappedObject, updateFunction)
-    {
-        super();
-        this.wrappedObject = wrappedObject;
-        this.updateWrappedItem = updateFunction;
-    }
+// export class SceneNodeWrapper extends SceneNode
+// {
+//     constructor()
+//     {
+//         super();
+//         this.wrappedObject = null; //wrappedObject;
+//         this.updateWrappedItem = null; //updateFunction;
+//     }
 
-    requestClean()
-    {
-        this._cleanState();
-    }
+//     requestClean()
+//     {
+//         this._cleanState();
+//     }
 
-    _updateCachesPostClean()
-    {
-        super._updateCachesPostClean();
-        this.updateWrappedItem(this.wrappedObject);
-    }
-}
+//     _updateCachesPostClean()
+//     {
+//         super._updateCachesPostClean();
+//         this.updateWrappedItem(this.wrappedObject);
+//     }
+// }
 
 
 
