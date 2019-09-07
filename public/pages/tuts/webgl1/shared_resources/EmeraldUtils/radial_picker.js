@@ -38,6 +38,7 @@ export class RadialButton extends SceneNode
         
     }
     actionExpandsLayer() {return this.childButtons.length > 0; }
+    actionClosesLayer() {return true;} //only called if layer wasn't expanded
     isToggled(){ return this._bIsToggled;}
     setToggled(bIsToggled){this._bIsToggled = bIsToggled;}
     getButtonRadius() 
@@ -88,7 +89,7 @@ export class RadialPicker extends SceneNode
                 {
                     if(button.actionExpandsLayer())
                     {
-                        // button.takeAction();
+                        button.takeAction();
                         for(const buttonToUnToggle of layer) {buttonToUnToggle.setToggled(false);}
                         button.setToggled(true);
 
@@ -103,7 +104,15 @@ export class RadialPicker extends SceneNode
                     else
                     {
                         button.takeAction();
-                        this.close();
+                        if(button.actionClosesLayer())
+                        {
+                            this.close();
+                        }
+                        else
+                        {
+                            for(const otherButtons of layer) { otherButtons.setToggled(false);}
+                            button.setToggled(true); 
+                        }
                         return true;
                     }
                 }
@@ -474,7 +483,8 @@ export class TexturedCubeRadialButton extends RadialButton
         // this.toggleColor = vec3.fromValues(1, 1, 0.6313);
         this.desiredScale = vec4.fromValues(1,1,1);
         this.setLocalScale(this.desiredScale);
-        this.customActionFunction = function(){console.log("TexturedCubeRadialButton custom action function; please override")}
+        // this.customActionFunction = function(){console.log("TexturedCubeRadialButton custom action function; please override")}
+        this.customActionFunction = function(){}
         this.textureObj = textureObj;
     }
 
@@ -531,7 +541,7 @@ export class TexturedTextButton_Statics
 
 export class TexturedTextButton extends TexturedCubeRadialButton
 {
-    constructor(gl, textureObj, text="", textColor=vec3.fromValues(1,1,1))
+    constructor(gl, textureObj, text="")
     {
         super(gl, textureObj);
 
