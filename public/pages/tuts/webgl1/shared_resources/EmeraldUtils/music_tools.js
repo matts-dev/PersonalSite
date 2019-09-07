@@ -711,7 +711,15 @@ class PianoSettingsStatics
         this.gl = gl;
         this.textures = {
             gearIcon : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Icons/GearIcon.png"),
-        }
+            scale : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/MusicScaleIcon.png"),
+            scaleLock : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/MusicScale_Locked.png"),
+            newPiano : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/NewPianoIcon.png"),
+            chords :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/Chords.png"),
+            search :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/Binoculars.png"),
+            setScale :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/newScaleIcon.png"),
+            removeScale :new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/RemoveScaleIcon.png"),
+            searchParameters :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/SearchParameters.png"),
+        };
     }
 }
 
@@ -732,17 +740,31 @@ class PianoSettingsWidget extends RadialPicker
     static makeButtons(gl)
     {
         let statics = getPianoSettingsStatics(gl)
-        let openButton = new TexturedCubeRadialButton(gl, statics.textures.gearIcon);
-        // let openButton = new CubeRadialButton(gl, statics.textures.gearIcon);
-        
-        //temporary create test buttons
-        let testButtons = [];
-        for(let btn = 0; btn < 5; ++btn)
-        {
-            testButtons.push(new CubeRadialButton(gl));
-        }
-        openButton.childButtons = testButtons;
 
+        let configBtn = function(btn)
+        {
+            btn.desiredScale = vec3.fromValues(0.75, 0.75, 0.75);
+            btn.setLocalScale(btn.desiredScale);
+            return btn;
+        }
+
+        let openButton = configBtn(new TexturedCubeRadialButton(gl, statics.textures.gearIcon));
+        
+        let Layer1Buttons = [
+            configBtn(new TexturedCubeRadialButton(gl, statics.textures.scale)),
+            configBtn(new TexturedCubeRadialButton(gl, statics.textures.scaleLock)),
+            configBtn(new TexturedCubeRadialButton(gl, statics.textures.newPiano)),
+        ]
+
+        //temporary create test buttons
+        // let testButtons = [];
+        // for(let btn = 0; btn < 5; ++btn)
+        // {
+        //     testButtons.push(new CubeRadialButton(gl));
+        // }
+        // openButton.childButtons = testButtons;
+
+        openButton.childButtons = Layer1Buttons;
         return openButton;
     }
 
@@ -774,16 +796,45 @@ export class PianoManager extends SceneNode
         if (piano == null){ piano = new Piano(gl, "../shared_resources/Sounds/PianoKeySounds/", 1);}
 
         this.dragwidget = new DragWidgetTextured(gl, true, glCanvas, camera);
-        this.dragwidget.setParent(this);
+        this.dragwidget.setParent(this); 
 
         this.pianoNode = new PianoNode(gl, glCanvas, piano, camera);
         this.pianoNode.setParent(this);
-        this.pianoNode.setLocalPosition(vec3.fromValues(2,0,0)); //#TODO make relative to width of drag widget
-        this.pianoNode.setLocalScale(vec3.fromValues(0.25, 0.25, 0.25));
+        this.pianoNode.setLocalScale(vec3.fromValues(0.5, 0.5, 0.5));
 
         this.pianoSettings = new PianoSettingsWidget(gl, glCanvas);
-        this.pianoSettings.setParent(this.dragwidget);
-        this.pianoSettings.setLocalPosition(vec3.fromValues(3.5,0,0)); //#TODO make relative to piano width and update when parent get dirty
+        this.pianoSettings.setParent(this);
+        
+
+        this._updateLayout();
+    }
+
+    _updateLayout()
+    {
+        //objects are based on unit cubes; therefore untransformed widths/heights are 1
+        let objectSpacing = 0.1;
+        let xUnit = vec4.fromValues(1,0,0,0);
+
+        let dragXform = this.dragwidget.getLocalModelMat();
+        let dragWidthVec = vec4.transformMat4(vec4.create(), xUnit, dragXform);
+        let dragWidgetWidth = vec4.length(dragWidthVec);
+
+        // let pianoScale = this.pianoNode.getLocalScale(vec3.create());
+        // let pianoScaledWidth = this.pianoNode.piano.width * pianoScale[0];
+        let pianoLocalMat = this.pianoNode.getLocalModelMat();
+        let pianoWidthVec = vec4.fromValues(this.pianoNode.piano.width, 0, 0, 0);
+        vec4.transformMat4(pianoWidthVec, pianoWidthVec, pianoLocalMat);
+        let pianoScaledWidth = pianoWidthVec[0];
+
+        let settingsIconWidth = this.pianoSettings.openButton.getButtonRadius();
+
+        // this.pianoNode.setLocalPosition(vec3.fromValues(dragWidgetWidth, 0, 0));
+        this.pianoNode.setLocalPosition(vec3.fromValues(dragWidgetWidth/2 + pianoScaledWidth/2 + objectSpacing, 0, 0));
+
+        this.pianoSettings.setLocalPosition(vec3.fromValues(dragWidgetWidth/2 + objectSpacing 
+                                                            + pianoScaledWidth + objectSpacing 
+                                                            + settingsIconWidth / 2 + 0.075, 0, 0)); //extra space because of illusion of more space created from depad arrows
+
     }
 
     render(viewMat, perspectiveMat)

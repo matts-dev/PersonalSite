@@ -208,7 +208,7 @@ export class DragWidgetTextured extends DragWidget
     _createTextures(gl)
     {
         return {
-            depad : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Icons/DepadIcon2.png"),
+            depad : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/Icons/DepadIcon3.png"),
         }
     }
 

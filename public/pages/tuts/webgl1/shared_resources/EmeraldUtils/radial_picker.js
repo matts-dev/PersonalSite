@@ -3,13 +3,13 @@ import { vec2, vec3, vec4 } from "../gl-matrix_esm/index.js";
 import { SceneNode } from "./3d_utils.js";
 import * as utils2d from "./2d_utils.js";
 import { coloredCubeFactory, texturedCubeFactory} from "./emerald_easy_shapes.js";
+import { fromRotationTranslation } from "../gl-matrix_esm/mat4.js";
 
 export class RadialButton extends SceneNode
 {
-    constructor(buttonRadius, childButtons = [])
+    constructor(childButtons = [])
     {   
         super();
-        this.buttonRadius = buttonRadius;
         this.childButtons = childButtons;
         this.radiusVector = vec4.fromValues(1,0,0,0); //transformations apply to this vector before getting length; update to define custom button's radius
         this.bExpands = true;
@@ -423,11 +423,14 @@ export class TexturedCubeRadialButton extends RadialButton
 
         let statics = getTexturedCubeStatics(gl);
 
+        this.radiusVector = vec4.fromValues(0.75, 0, 0, 0);
+
         this.gl = gl;
         this.clickCube = statics.clickCube;
         this.bgColor = vec3.fromValues(1,1,1);
         this.toggleColor = vec3.fromValues(1,0,0);
-        this.desiredScale = vec3.fromValues(0.4, 0.4, 0.4);
+        // this.desiredScale = vec3.fromValues(0.4, 0.4, 0.4);
+        this.desiredScale = vec4.fromValues(1,1,1);
         this.setLocalScale(this.desiredScale);
         this.customActionFunction = function(){console.log("TexturedCubeRadialButton custom action function; please override")}
         this.textureObj = textureObj;
