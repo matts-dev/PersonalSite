@@ -45,6 +45,22 @@ let noteToIdxMap = {
     "B":11,
 };
 
+let mapNoteNameToFilePrefix = 
+{
+    "C" : "C",
+    "C#" : "CSHARP",
+    "D" : "D",
+    "D#" : "DSHARP",
+    "E" :"E",
+    "F" : "F",
+    "F#" : "FSHARP",
+    "G" : "G",
+    "G#" :"GSHARP",
+    "A" : "A",
+    "A#" : "ASHARP",
+    "B" : "B",
+}
+
 function generateScaleList(startNoteName, scaleSteps)
 {
     let scale = [startNoteName];
@@ -705,7 +721,64 @@ class PianoNode extends SceneNode
     }
 }
 
+class ScaleButton extends TexturedTextButton
+{
+    constructor(gl, textureObj, text="", pianoSettings = null)
+    {
+        super(gl,textureObj, text);
+        this.pianoSettings = pianoSettings;
+    }
+    actionClosesLayer(){return false;}
+    takeAction()
+    {
+        if(this.pianoSettings)
+        {
+            let scaleStr = mapNoteNameToFilePrefix[this.text.wrappedText.text];
+            if(scaleStr)
+            {
+                this.scaleObj = new Scale(scaleStr, this.pianoSettings.currentScaleSteps); //TODO hardcoded to minor; fix this
+                this.pianoSettings.pianoNode.piano.applyScale(this.scaleObj);
+            }
+        }
+        else
+        {
+            console.log("ScaleButton: No piano settings available");
+        }
+    }
+}
 
+let majorStr = "Major";
+let minorStr = "Minor";
+let harmonicMinorStr = "Harmonic m.";
+let scalePatternMap = {};
+scalePatternMap[majorStr] = majorScaleSteps();
+scalePatternMap[minorStr] = minorScaleSteps();
+scalePatternMap[harmonicMinorStr] = harmonicMinorScaleSteps();
+
+class ScalePatternButton extends TexturedTextButton
+{
+    constructor(gl, textureObj, text="", pianoSettings = null)
+    {
+        super(gl,textureObj, text);
+        this.pianoSettings = pianoSettings;
+    }
+    actionClosesLayer(){return false;}
+    takeAction()
+    {
+        if(this.pianoSettings)
+        {
+            this.pianoSettings.currentScaleSteps = scalePatternMap[this.text.wrappedText.text];
+        }
+        else
+        {
+            console.log("ScalePatternButton: No piano settings available");
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Piano Settings
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 class PianoSettingsStatics
 {
     constructor(gl)
@@ -725,7 +798,6 @@ class PianoSettingsStatics
         };
     }
 }
-
 let static_PianoSettingsPerGLContext = new Map();
 function getPianoSettingsStatics(gl)
 {
@@ -740,29 +812,33 @@ function getPianoSettingsStatics(gl)
 
 class PianoSettingsWidget extends RadialPicker
 {
-    //default configuration for any given button
-    static configBtn(btn)
-    {
-        btn.desiredScale = vec3.fromValues(0.75, 0.75, 0.75);
-        btn.setLocalScale(btn.desiredScale);
-        return btn;        
-    }
     static makeOpenButton(gl)
     {
         let statics = getPianoSettingsStatics(gl)
-        return PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.gearIcon));
+        let openButton = new TexturedCubeRadialButton(gl, statics.textures.gearIcon);
+        openButton.desiredScale = vec3.fromValues(0.75, 0.75, 0.75);
+        openButton.setLocalScale(openButton.desiredScale);
+        return openButton;
     }
 
-    constructor(gl, glCanvas, owningPianoNode)
+    constructor(gl, glCanvas, pianoNode)
     {
         super(PianoSettingsWidget.makeOpenButton(gl), 180);
         this.makeButtons(gl);
 
-        this.owningPianoNode = owningPianoNode;
+        this.pianoNode = pianoNode;
+        this.currentScaleSteps = minorScaleSteps();
 
         let eventHandler = getEventHandler(glCanvas)
         eventHandler.addSubscriber(this);
 
+    }
+
+    configDefaultButton(btn)
+    {
+        btn.desiredScale = vec3.fromValues(0.75, 0.75, 0.75);
+        btn.setLocalScale(btn.desiredScale);
+        return btn;        
     }
 
     makeButtons(gl)
@@ -779,18 +855,18 @@ class PianoSettingsWidget extends RadialPicker
         //             -...
         //         -major (word node)
         //         -harmonic minor (word node)
-        let scalesButton = PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.scale))
+        let scalesButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scale))
         let scaleButtonChildren = [];
         {
-            let scaleLockButton = PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.scaleLock));
+            let scaleLockButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scaleLock));
             scaleButtonChildren.push(scaleLockButton);
 
-            let setScaleButton = PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.setScale));
+            let setScaleButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.setScale));
             let scaleTypesButtons = []
             {
-                let majorScalesButton = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "Major"));
-                let minorScalesButton = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "Minor"));
-                let harmonicMinorScalesButton = new TexturedTextButton(gl, statics.textures.blankCircle, "Harmonic M.");
+                let majorScalesButton = this.configDefaultButton(new ScalePatternButton(gl, statics.textures.blankCircle, majorStr, this));
+                let minorScalesButton = this.configDefaultButton(new ScalePatternButton(gl, statics.textures.blankCircle, minorStr, this));
+                let harmonicMinorScalesButton = new ScalePatternButton(gl, statics.textures.blankCircle, harmonicMinorStr, this);
 
                 scaleTypesButtons.push(majorScalesButton);
                 scaleTypesButtons.push(minorScalesButton);
@@ -799,18 +875,18 @@ class PianoSettingsWidget extends RadialPicker
                 let rootNoteButtons = null;
                 {
                     //set up root notes
-                    let c_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "C"));
-                    let c_s_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "C#"));
-                    let d_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "D"));
-                    let d_s_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "D#"));
-                    let e_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "E"));
-                    let f_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "F"));
-                    let f_s_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "F#"));
-                    let g_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "G"));
-                    let g_s_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "G#"));
-                    let a_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "A"));
-                    let a_s_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "A#"));
-                    let b_button = PianoSettingsWidget.configBtn(new TexturedTextButton(gl, statics.textures.blankCircle, "B"));
+                    let c_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "C", this));
+                    let c_s_button =    this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "C#", this));
+                    let d_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "D", this));
+                    let d_s_button =    this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "D#", this));
+                    let e_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "E", this));
+                    let f_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "F", this));
+                    let f_s_button =    this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "F#", this));
+                    let g_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "G", this));
+                    let g_s_button =    this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "G#", this));
+                    let a_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "A", this));
+                    let a_s_button =    this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "A#", this));
+                    let b_button =      this.configDefaultButton(new ScaleButton(gl, statics.textures.blankCircle, "B", this));
 
                     rootNoteButtons = [
                         c_button,
@@ -835,7 +911,7 @@ class PianoSettingsWidget extends RadialPicker
             setScaleButton.childButtons = scaleTypesButtons;
             scaleButtonChildren.push(setScaleButton);
 
-            let removeScaleButton = PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.removeScale));
+            let removeScaleButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.removeScale));
             scaleButtonChildren.push(removeScaleButton);
         }
         scalesButton.childButtons = scaleButtonChildren;
@@ -843,7 +919,7 @@ class PianoSettingsWidget extends RadialPicker
 
         let Layer1Buttons = [
             scalesButton,
-            PianoSettingsWidget.configBtn(new TexturedCubeRadialButton(gl, statics.textures.newPiano)),
+            this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.newPiano)),
         ]
 
         this.openButton.childButtons = Layer1Buttons;

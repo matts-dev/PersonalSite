@@ -78,7 +78,7 @@ class Game
 
 
         this.text4 = new BMF.BitmapTextblock3D(this.gl, this.font, "180, center pivot.");
-        this.text4.xform.pos = vec3.fromValues(3,2.5,0);
+        this.text4.xform.pos = vec3.fromValues(-7,6,0);
         this.text4.xform.scale = vec3.fromValues(10,10,10);
         this.text4.hAlignment = BMF.HAlignment.CENTER;
 
@@ -125,7 +125,7 @@ class Game
         this.openbtn_180_centerpivot = new CubeRadialButton(this.gl);
         makeButtonsChild([this.openbtn_180_centerpivot], this.layer1Buttons);
         this.radialPicker_180_centerpivot = new RadialPicker(this.openbtn_180_centerpivot, 180);
-        this.radialPicker_180_centerpivot.setLocalPosition(vec3.fromValues(3,0,0));
+        this.radialPicker_180_centerpivot.setLocalPosition(vec3.fromValues(-7,5,0));
         // this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(1,0,0);
         this.radialPicker_180_centerpivot.startItemDir = vec3.fromValues(0,-1,0);
 
