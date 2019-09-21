@@ -110,6 +110,7 @@ export class Scale
         this.notes = {};
         this.notes[startNoteName] = new ScaleMemberNote(startNoteName, 0, 0);
         this.intervals = [this.notes[startNoteName]];
+        this.rootNote = startNoteName;
 
         let semitones = 0;
         let step = noteToIdxMap[startNoteName];
@@ -216,17 +217,22 @@ class PianoKey
 
         this.scaleNote = null;
         this.scaleColor = vec3.fromValues(0,1,0);
+        // this.rootColor = vec3.fromValues(0.5,0.0,0.0);
+        this.rootColor = vec3.fromValues(1.0,0.0,0.0);
+        // this.rootColor = vec3.fromValues(1,0.7,0);
+        // this.rootColor = vec3.fromValues(0.99, 0.6, 0.2);
         this.scaleNoteColorPerc = 0.5;
 
         this.blendColorBuffer = vec3.clone(this.baseColor);
         this.pressColorAlpha = 0;
-        this.pressColor = vec3.fromValues(1, 0.56, 0.058);
+        this.pressColor = vec3.fromValues(0.56, 0.56, 0.058);
 
         this.file_path_prefix = "";
         this.keyString = keyString;
         this.octaveString = octaveIdx.toString();
         this.generateSound(soundPrefixLocation);
-
+        
+        this.bShowRootNote = true;
         this.bFilterPlaybleNotesToScale = false;
     }
 
@@ -269,6 +275,11 @@ class PianoKey
     {
         this.bFilterPlaybleNotesToScale = bFilterPlaybleNotesToScale;
     }
+    setShowRootNote(bShowRootNote)
+    {
+        this.bShowRootNote = bShowRootNote;
+        this.updateColor(0.01);
+    }
 
     updateColor(dt_sec)
     {
@@ -284,6 +295,13 @@ class PianoKey
             this.blendColorBuffer[0] = this.scaleNoteColorPerc * this.scaleColor[0] + percBase * this.baseColor[0];
             this.blendColorBuffer[1] = this.scaleNoteColorPerc * this.scaleColor[1] + percBase * this.baseColor[1];
             this.blendColorBuffer[2] = this.scaleNoteColorPerc * this.scaleColor[2] + percBase * this.baseColor[2];
+
+            if(this.bShowRootNote && this.scaleNote.semitonesFromRoot == 0)
+            {
+                this.blendColorBuffer[0] = this.scaleNoteColorPerc * this.rootColor[0] + percBase * this.baseColor[0];
+                this.blendColorBuffer[1] = this.scaleNoteColorPerc * this.rootColor[1] + percBase * this.baseColor[1];
+                this.blendColorBuffer[2] = this.scaleNoteColorPerc * this.rootColor[2] + percBase * this.baseColor[2];
+            }
         }
 
         //blend clicks
@@ -327,6 +345,8 @@ export class Piano
         this.octaves = numOctaves;
 
         this.soundPrefixLocation = soundPrefixLocation;
+        this.bShowRootNote = false;
+        this.bFilterPlaybleNotesToScale = false;
         this._generateKeys();
 
         //#suggestion not sure, but perhaps have this be self contained and request its own animation frames. may be bad for perf
@@ -461,6 +481,9 @@ export class Piano
                     this.keyToOctaves[keyString] = [ this.keys[this.keys.length-1] ]; //start list
             }
         }
+
+        this.setShowRootNote(this.bShowRootNote);
+        this.setFilterPlayableToScale(this.bFilterPlaybleNotesToScale);
     }
 
     _getBaseXform()
@@ -486,6 +509,14 @@ export class Piano
         for(let pianoKey of this.keys)
         {
             pianoKey.setFilterPlayableToScale(bFilterPlaybleNotesToScale);
+        }
+    }
+    setShowRootNote(bShowRootNote)
+    {
+        this.bShowRootNote = bShowRootNote;
+        for(let pianoKey of this.keys)
+        {
+            pianoKey.setShowRootNote(this.bShowRootNote);
         }
     }
 
@@ -814,6 +845,33 @@ class ToggleButton extends TexturedCubeRadialButton
     }
 }
 
+export class TexturedTextButton_Toggle extends TexturedTextButton
+{
+    constructor(gl, textureObj, text="", defaultState=false)
+    {
+        super(gl, textureObj, text);
+
+        this.bToggleEffect = defaultState;
+        super.setToggled(defaultState);
+        this.v_applyToggleEffect(this.bToggleEffect); //in most case will not have effect because super ctor must be called before derived ctors
+    }
+    setToggled(bIsToggled)
+    {
+        //ignore what radial picker wants of this button and always reflect toggle state of effect.
+        if(bIsToggled == this.bToggleEffect)
+        {
+            super.setToggled(bIsToggled);
+        }
+    }
+    actionClosesLayer() {return false;}
+    takeAction()
+    {
+        this.bToggleEffect = !this.bToggleEffect
+        this.setToggled(this.bToggleEffect);
+        this.v_applyToggleEffect(); //derived classes must override this virtual
+    }
+}
+
 class ScaleLockButton extends ToggleButton
 {
     constructor(gl, textureObj, pianoNodeGetter)
@@ -834,6 +892,30 @@ class ScaleLockButton extends ToggleButton
             }
         }
     }
+}
+
+
+export class ShowRootNoteButtonToggle extends TexturedTextButton_Toggle
+{
+    constructor(gl, textureObj, pianoNodeGetter)
+    {
+        super(gl, textureObj, "root");
+        this.pianoNodeGetter = pianoNodeGetter;
+        this.v_applyToggleEffect();
+    }
+
+    v_applyToggleEffect()
+    {
+        if(this.pianoNodeGetter)
+        {
+            let pianoNode = this.pianoNodeGetter();
+            if(pianoNode)
+            {
+                pianoNode.piano.setShowRootNote(this.bToggleEffect);
+            }
+        }
+    }
+
 }
 
 let majorStr = "Major";
@@ -939,13 +1021,17 @@ class PianoSettingsWidget extends RadialPicker
     makeButtons(gl)
     {
         let statics = getPianoSettingsStatics(gl)
+        let boundPianoNodeGetter = this.getCurrentPianoNode.bind(this);
         
         // mustical scales
         let scalesButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scale))
         let scaleButtonChildren = [];
         {
-            let scaleLockButton = this.configDefaultButton(new ScaleLockButton(gl, statics.textures.scaleLock, this.getCurrentPianoNode.bind(this)));
+            let scaleLockButton = this.configDefaultButton(new ScaleLockButton(gl, statics.textures.scaleLock, boundPianoNodeGetter));
             scaleButtonChildren.push(scaleLockButton);
+
+            let showRootNoteButton = this.configDefaultButton(new ShowRootNoteButtonToggle(gl, statics.textures.blankCircle, boundPianoNodeGetter));
+            scaleButtonChildren.push(showRootNoteButton);
 
             let setScaleButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.setScale));
             let scaleTypesButtons = [];
@@ -1104,7 +1190,7 @@ export class PianoManager extends SceneNode
         super();
 
         if (!glCanvas || !camera) { console.log("Did not proved required parameters to PianoManager")}
-        if (piano == null){ piano = new Piano(gl, "../shared_resources/Sounds/PianoKeySounds/", 1);}
+        if (piano == null){ piano = new Piano(gl, "../shared_resources/Sounds/PianoKeySounds/", 2);}
 
         this.dragwidget = new DragWidgetTextured(gl, true, glCanvas, camera);
         this.dragwidget.setParent(this); 
