@@ -89,9 +89,9 @@ export class RadialPicker extends SceneNode
                 {
                     if(button.actionExpandsLayer())
                     {
-                        button.takeAction();
                         for(const buttonToUnToggle of layer) {buttonToUnToggle.setToggled(false);}
                         button.setToggled(true);
+                        button.takeAction();
 
                         shrinkArrayLength(this.layers, layerIdx + 1);
                         shrinkArrayLength(this.layerPivots, layerIdx + 1);
@@ -103,7 +103,6 @@ export class RadialPicker extends SceneNode
                     }
                     else
                     {
-                        button.takeAction();
                         if(button.actionClosesLayer())
                         {
                             this.close();
@@ -113,6 +112,7 @@ export class RadialPicker extends SceneNode
                             for(const otherButtons of layer) { otherButtons.setToggled(false);}
                             button.setToggled(true); 
                         }
+                        button.takeAction();
                         return true;
                     }
                 }
