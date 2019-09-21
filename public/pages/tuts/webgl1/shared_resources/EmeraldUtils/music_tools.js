@@ -798,7 +798,7 @@ class PianoSettingsStatics
             newPiano : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/NewPianoIcon.png"),
             chords :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/Chords.png"),
             search :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/Binoculars.png"),
-            setScale :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/newScaleIcon.png"),
+            setScale :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/NewScaleIcon.png"),
             removeScale : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/RemoveScaleIcon.png"),
             searchParameters :  new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/SearchParameters.png"),
             blankCircle : new EmeraldUtils.Texture(gl, "../shared_resources/Textures/MusicTool/BlankCircle.png"),
