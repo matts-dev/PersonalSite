@@ -226,11 +226,18 @@ class PianoKey
         this.keyString = keyString;
         this.octaveString = octaveIdx.toString();
         this.generateSound(soundPrefixLocation);
+
+        this.bFilterPlaybleNotesToScale = false;
     }
 
     generateSound(soundPrefixURL)
     {
         this.sound = new EmeraldUtils.Sound( soundPrefixURL + this.keyString + this.octaveString + ".wav");
+    }
+
+    shouldSkipHitTest()
+    {
+        return this.bFilterPlaybleNotesToScale && !this.scaleNote;
     }
 
     getColor()
@@ -244,10 +251,23 @@ class PianoKey
         this.updateColor(0.0);
     }
 
-    press()
+    press(bypassScaleFilter=false)
     {
+        if(this.bFilterPlaybleNotesToScale && !bypassScaleFilter)
+        {
+            if(!this.scaleNote)
+            {
+                return; //no scale note, do not play!
+            }
+        }
+
         this.pressColorAlpha = 1.0;
         this.sound.play();
+    }
+
+    setFilterPlayableToScale(bFilterPlaybleNotesToScale)
+    {
+        this.bFilterPlaybleNotesToScale = bFilterPlaybleNotesToScale;
     }
 
     updateColor(dt_sec)
@@ -459,6 +479,16 @@ export class Piano
         return baseXform;
     }
 
+    /* only allow notes in the scale to be playable */
+    setFilterPlayableToScale(bFilterPlaybleNotesToScale)
+    {
+        this.bFilterPlaybleNotesToScale = bFilterPlaybleNotesToScale
+        for(let pianoKey of this.keys)
+        {
+            pianoKey.setFilterPlayableToScale(bFilterPlaybleNotesToScale);
+        }
+    }
+
     setOctaveRange(start, end)
     {
         this.baseOctave = start;
@@ -498,6 +528,8 @@ export class Piano
         let baseXform = this._getBaseXform();
         for(const key of this.keys)
         {
+            if(key.shouldSkipHitTest()){ continue;}
+
             let keyXform = mat4.mul(mat4.create(), baseXform, key.xform.toMat4(mat4.create()));            
             let keyInverseXform = mat4.invert(mat4.create(), keyXform);
             
@@ -754,6 +786,56 @@ class ScaleButton extends TexturedTextButton
     }
 }
 
+class ToggleButton extends TexturedCubeRadialButton
+{
+    constructor(gl, textureObj, defaultState=false)
+    {
+        super(gl, textureObj);
+        
+        this.bToggleEffect = defaultState;
+        super.setToggled(defaultState);
+        this.v_applyToggleEffect(this.bToggleEffect); //in most case will not have effect because super ctor must be called before derived ctors
+    }
+
+    setToggled(bIsToggled)
+    {
+        //ignore what radial picker wants of this button and always reflect toggle state of effect.
+        if(bIsToggled == this.bToggleEffect)
+        {
+            super.setToggled(bIsToggled);
+        }
+    }
+    actionClosesLayer() {return false;}
+    takeAction()
+    {
+        this.bToggleEffect = !this.bToggleEffect
+        this.setToggled(this.bToggleEffect);
+        this.v_applyToggleEffect(); //derived classes must override this virtual
+    }
+}
+
+class ScaleLockButton extends ToggleButton
+{
+    constructor(gl, textureObj, pianoNodeGetter)
+    {
+        super(gl, textureObj);
+        this.pianoNodeGetter = pianoNodeGetter;
+        this.v_applyToggleEffect();
+    }
+
+    v_applyToggleEffect()
+    {
+        if(this.pianoNodeGetter)
+        {
+            let pianoNode = this.pianoNodeGetter();
+            if(pianoNode)
+            {
+                pianoNode.piano.setFilterPlayableToScale(this.bToggleEffect);
+            }
+        }
+    }
+}
+
 let majorStr = "Major";
 let minorStr = "Minor";
 let harmonicMinorStr = "Harmonic m.";
@@ -849,6 +931,11 @@ class PianoSettingsWidget extends RadialPicker
         return btn;        
     }
 
+    getCurrentPianoNode()
+    {
+        return this.pianoNode;
+    }
+
     makeButtons(gl)
     {
         let statics = getPianoSettingsStatics(gl)
@@ -857,7 +944,7 @@ class PianoSettingsWidget extends RadialPicker
         let scalesButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scale))
         let scaleButtonChildren = [];
         {
-            let scaleLockButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scaleLock));
+            let scaleLockButton = this.configDefaultButton(new ScaleLockButton(gl, statics.textures.scaleLock, this.getCurrentPianoNode.bind(this)));
             scaleButtonChildren.push(scaleLockButton);
 
             let setScaleButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.setScale));
