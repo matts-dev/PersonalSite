@@ -91,10 +91,10 @@ class Game
         this.dragWidgetSelfRegister.setLocalPosition(vec3.fromValues(3,4,0));
 
         this.pianoManager = new PianoManager(this.gl, this.glCanvas, null, this.camera);
-        this.pianoManager.setLocalPosition(vec3.fromValues(-5, 2, 0));
+        this.pianoManager.setLocalPosition(vec3.fromValues(-6.5, 2, 0));
 
         this.pianoManager2 = new PianoManager(this.gl, this.glCanvas, null, this.camera);
-        this.pianoManager2.setLocalPosition(vec3.fromValues(-5, -2, 0));
+        this.pianoManager2.setLocalPosition(vec3.fromValues(-6.5, -2, 0));
 
         let bLargeNumber = false;
         if(bLargeNumber)
