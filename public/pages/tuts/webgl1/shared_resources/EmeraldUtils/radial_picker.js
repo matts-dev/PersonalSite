@@ -551,6 +551,8 @@ export class TexturedTextButton extends TexturedCubeRadialButton
         this.text.setParent(this);
         this.text.setLocalPosition(vec3.fromValues(0,0,0.6));
 
+        this.closeLayerOnAction = true;
+
         this.updateLayout();
     }
 
@@ -571,6 +573,17 @@ export class TexturedTextButton extends TexturedCubeRadialButton
         this.text.setLocalScale(vec3.fromValues(scaleUp, scaleUp, scaleUp));
 
     }
+
+    takeAction()
+    {
+        if(this.customTextActionFunction)
+        {
+            this.customTextActionFunction(this.text.wrappedText.text);
+        }
+        super.takeAction();
+    }
+
+    actionClosesLayer(){return this.closeLayerOnAction;}
 
     render(projection_mat, view_mat)
     {
