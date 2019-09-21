@@ -303,6 +303,7 @@ export class Piano
             },
             spacing : 0.1
         }
+        this.baseOctave = 3;
         this.octaves = numOctaves;
 
         this.soundPrefixLocation = soundPrefixLocation;
@@ -395,7 +396,6 @@ export class Piano
         let octaveSize = 7 * whiteKeyOffset;
         this.width = this.octaves * octaveSize;
 
-        let baseOctave = 3;
         let keyIdx = 0;
         for(let octave = 0; octave < this.octaves; ++octave)
         {
@@ -433,7 +433,7 @@ export class Piano
                     keyXform.scale[1] = this.keyData.blackKey.height;
                 }
                 
-                this.keys.push(new PianoKey(keyXform, key.isWhiteKey, this.soundPrefixLocation, keyString, octave + baseOctave));
+                this.keys.push(new PianoKey(keyXform, key.isWhiteKey, this.soundPrefixLocation, keyString, octave + this.baseOctave));
                 
                 if(keyString in this.keyToOctaves)
                     this.keyToOctaves[keyString].push(this.keys[this.keys.length-1]); //append to list
@@ -457,6 +457,13 @@ export class Piano
         }
 
         return baseXform;
+    }
+
+    setOctaveRange(start, end)
+    {
+        this.baseOctave = start;
+        this.octaves = end - start;
+        this._generateKeys();
     }
 
     applyScale(scale)
@@ -832,6 +839,7 @@ class PianoSettingsWidget extends RadialPicker
         let eventHandler = getEventHandler(glCanvas)
         eventHandler.addSubscriber(this);
 
+        this.requestLayoutRefreshDelegate = new EmeraldUtils.Delegate();
     }
 
     configDefaultButton(btn)
@@ -845,16 +853,7 @@ class PianoSettingsWidget extends RadialPicker
     {
         let statics = getPianoSettingsStatics(gl)
         
-        // -scales
-        //     -scale lock icon
-        //     -change scale icon
-        //         -minor (word node)
-        //             -C
-        //             -C# (word node + visualization of scale)
-        //             -D
-        //             -...
-        //         -major (word node)
-        //         -harmonic minor (word node)
+        // mustical scales
         let scalesButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.scale))
         let scaleButtonChildren = [];
         {
@@ -862,7 +861,7 @@ class PianoSettingsWidget extends RadialPicker
             scaleButtonChildren.push(scaleLockButton);
 
             let setScaleButton = this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.setScale));
-            let scaleTypesButtons = []
+            let scaleTypesButtons = [];
             {
                 let majorScalesButton = this.configDefaultButton(new ScalePatternButton(gl, statics.textures.blankCircle, majorStr, this));
                 let minorScalesButton = this.configDefaultButton(new ScalePatternButton(gl, statics.textures.blankCircle, minorStr, this));
@@ -916,13 +915,90 @@ class PianoSettingsWidget extends RadialPicker
         }
         scalesButton.childButtons = scaleButtonChildren;
 
+        //octaves
+        let octavesButton = this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "Octaves", this));
+        let octavesChildren = [];
+        {
+            let startOctaveButton = this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "Start", this));
+            let startOctavesChildren = [];
+            {
+                startOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "2", this)));
+                startOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "3", this)));
+                startOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "4", this)));
+                startOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "5", this)));
+
+                let handleOctaveStartClick_Bound = this.handleOctaveClicked_start.bind(this);
+                for(let startOctBtn of startOctavesChildren)
+                {
+                    startOctBtn.customTextActionFunction = handleOctaveStartClick_Bound;
+                    startOctBtn.closeLayerOnAction = false;
+                }
+            }
+            startOctaveButton.childButtons = startOctavesChildren;
+            octavesChildren.push(startOctaveButton);
+
+            let stopOctaveButton = this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "Stop", this));
+            let stopOctavesChildren = [];
+            {
+                stopOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "3", this)));
+                stopOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "4", this)));
+                stopOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "5", this)));
+                stopOctavesChildren.push(this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "6", this)));
+
+                let handleOctaveStopClick_Bound = this.handleOctaveClicked_end.bind(this);
+                for(let stopOctBtn of stopOctavesChildren)
+                {
+                    stopOctBtn.customTextActionFunction = handleOctaveStopClick_Bound;
+                    stopOctBtn.closeLayerOnAction = false;
+                }
+            }
+            stopOctaveButton.childButtons = stopOctavesChildren;
+            octavesChildren.push(stopOctaveButton)
+        }
+        octavesButton.childButtons = octavesChildren;
 
         let Layer1Buttons = [
+            octavesButton,
             scalesButton,
             this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.newPiano)),
         ]
 
         this.openButton.childButtons = Layer1Buttons;
+    }
+
+    handleOctaveClicked_start(start_num_str)
+    {
+        let currentStart = this.pianoNode.piano.baseOctave;
+        let currentEnd = this.pianoNode.piano.octaves + currentStart;
+
+        let newStart = parseInt(start_num_str)
+        let newEnd = currentEnd;
+
+        if(newStart >= newEnd)
+        {
+            newStart = newEnd - 1;
+        }
+
+        this.pianoNode.piano.setOctaveRange(newStart, newEnd);
+        this.pianoNode.makeDirty();
+        this.requestLayoutRefreshDelegate.dispatchEvent(new Event("requestLayoutRefresh"));
+    }
+
+    handleOctaveClicked_end(end_num_str)
+    {
+        let currentStart = this.pianoNode.piano.baseOctave;
+
+        let newStart = currentStart;
+        let newEnd = parseInt(end_num_str);
+
+        if(newStart > newEnd)
+        {
+            newEnd += 1;
+        }
+
+        this.pianoNode.piano.setOctaveRange(newStart, newEnd);
+        this.pianoNode.makeDirty();
+        this.requestLayoutRefreshDelegate.dispatchEvent(new Event("requestLayoutRefresh"));
     }
 
 
@@ -952,6 +1028,17 @@ export class PianoManager extends SceneNode
 
         this.pianoSettings = new PianoSettingsWidget(gl, glCanvas, this.pianoNode);
         this.pianoSettings.setParent(this);
+        this.pianoSettings.requestLayoutRefreshDelegate.addEventListener("requestLayoutRefresh", this._requestLayoutUpdate.bind(this));
+
+        this._updateLayout();
+    }
+
+    _requestLayoutUpdate()
+    {
+        //clean everything just in case.
+        this.dragwidget.requestClean();
+        this.pianoNode.requestClean();
+        this.pianoSettings.requestClean();
 
         this._updateLayout();
     }
@@ -981,7 +1068,7 @@ export class PianoManager extends SceneNode
         this.pianoSettings.setLocalPosition(vec3.fromValues(dragWidgetWidth/2 + objectSpacing 
                                                             + pianoScaledWidth + objectSpacing 
                                                             + settingsIconWidth / 2 + 0.075, 0, 0)); //extra space because of illusion of more space created from depad arrows
-
+        
     }
 
     render(viewMat, perspectiveMat)
