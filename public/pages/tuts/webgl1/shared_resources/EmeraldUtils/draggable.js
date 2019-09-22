@@ -23,6 +23,7 @@ export class DragWidget extends SceneNode
         this._scaledRightBuffer = vec3.fromValues(0,0,0);
 
         this.stopTouchesFromInvokingMouseEvents = stopTouchesFromInvokingMouseEvents;
+        this.bAutoRegisterHandlers = this.bAutoRegisterHandlers;
         if(bAutoRegisterToEvents && canvas && camera)
         {
             this.canvas = canvas;
@@ -46,6 +47,14 @@ export class DragWidget extends SceneNode
     handleTouchEnd(e)  { if(this.stopTouchesFromInvokingMouseEvents) { e.preventDefault();} this.notifyInputUpEvent(e);}
 
     v_rayHitTest(rayStart, rayDir){console.log("draggable did not implement hittest virtual", rayStart, rayDir)} //implement this to do hit tests
+
+    notifyDeleted()
+    {
+        // if(this.bAutoRegisterHandlers && this.canvas && this.camera)
+        // {
+        //     document.removeEventListener()
+        // }
+    }
 
     notifyInputDownEvent(e, canvas, camera)
     {
