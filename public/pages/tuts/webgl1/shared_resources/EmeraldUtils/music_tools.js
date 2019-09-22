@@ -7,6 +7,7 @@ import {DragWidgetTextured} from "./draggable.js";
 import {RadialPicker, CubeRadialButton, TexturedCubeRadialButton, TexturedTextButton} from "./radial_picker.js";
 import { Montserrat_BMF } from "./Montserrat_BitmapFontConfig.js";
 import { TextBlockSceneNode } from "./BitmapFontRendering.js";
+import { i } from "./browser_key_codes.js";
 
 
 
@@ -758,6 +759,7 @@ class PianoNode extends SceneNode
     {
         super();
         this.gl = gl;
+        this.glCanvas = glCanvas;
         this.piano = piano;
 
         let eventHandler = getEventHandler(glCanvas);
@@ -788,6 +790,12 @@ class PianoNode extends SceneNode
     {
         this.requestClean();
         this.piano.render(viewMat, perspectiveMat);
+    }
+
+    notifyDeleted()
+    {
+        let eventHandler = getEventHandler(this.glCanvas);
+        eventHandler.deleteSubscriber(this);
     }
 }
 
@@ -915,7 +923,47 @@ export class ShowRootNoteButtonToggle extends TexturedTextButton_Toggle
             }
         }
     }
+}
 
+class AddPianoButton  extends TexturedCubeRadialButton
+{
+    constructor(gl, textureObj, owningPianoManager)
+    {
+        super(gl, textureObj);
+        this.pianoManager = owningPianoManager;
+    }
+
+    takeAction()
+    {
+        if(this.pianoManager)
+        {
+            let newPianoPos = this.pianoManager.getLocalPosition(vec3.create());
+            newPianoPos[1] -= 2;
+
+            //module static will hold this piano to prevent it from being deleted.
+            let newPianoManager = new PianoManager(this.pianoManager.gl, this.pianoManager.glCanvas, null, this.pianoManager.camera);
+            newPianoManager.setLocalPosition(newPianoPos);
+            console.log("created piano manager");
+        }
+    }
+}
+
+class DeletePianoButton  extends TexturedTextButton
+{
+    constructor(gl, textureObj, owningPianoManager)
+    {
+        super(gl,textureObj, "yes");
+        this.pianoManager = owningPianoManager;
+    }
+
+    takeAction()
+    {
+        if(this.pianoManager)
+        {
+            console.log("requesting delete piano manager");
+            pianoManagers.notifyRequestDeletePianoManager(this.pianoManager.glCanvas, this.pianoManager);
+        }
+    }
 }
 
 let majorStr = "Major";
@@ -992,18 +1040,27 @@ class PianoSettingsWidget extends RadialPicker
         return openButton;
     }
 
-    constructor(gl, glCanvas, pianoNode)
+    constructor(gl, glCanvas, pianoNode, owningPianoManager)
     {
         super(PianoSettingsWidget.makeOpenButton(gl), 180);
-        this.makeButtons(gl);
-
+        
+        this.glCanvas = glCanvas;
         this.pianoNode = pianoNode;
+        this.owningPianoManager = owningPianoManager;
         this.currentScaleSteps = minorScaleSteps();
-
+        
         let eventHandler = getEventHandler(glCanvas)
         eventHandler.addSubscriber(this);
-
+        
         this.requestLayoutRefreshDelegate = new EmeraldUtils.Delegate();
+
+        this.makeButtons(gl);
+    }
+
+    notifyDeleted()
+    {
+        let eventHandler = getEventHandler(this.glCanvas);
+        eventHandler.deleteSubscriber(this);
     }
 
     configDefaultButton(btn)
@@ -1130,10 +1187,19 @@ class PianoSettingsWidget extends RadialPicker
         }
         octavesButton.childButtons = octavesChildren;
 
+        let addPianoButton = this.configDefaultButton(new AddPianoButton(gl, statics.textures.newPiano, this.owningPianoManager));
+        let deletePianoButton = this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "delete", this));
+        deletePianoButton.childButtons = 
+        [
+            this.configDefaultButton(new DeletePianoButton(gl, statics.textures.blankCircle, this.owningPianoManager)),
+            this.configDefaultButton(new TexturedTextButton(gl, statics.textures.blankCircle, "no", this))
+        ]
+
         let Layer1Buttons = [
             octavesButton,
             scalesButton,
-            this.configDefaultButton(new TexturedCubeRadialButton(gl, statics.textures.newPiano)),
+            addPianoButton,
+            deletePianoButton,
         ]
 
         this.openButton.childButtons = Layer1Buttons;
@@ -1183,11 +1249,94 @@ class PianoSettingsWidget extends RadialPicker
 
 }
 
+/**
+ * Creates a module scope collection of piano managers. This means piano managers can create
+ * more piano managers on the fly and not need to worry about maintaining a reference to the piano.
+ * Piano managers have the ability to delete themselves via settings which will remove them from this collection
+ * 
+ */
+class ModulePianoManagerCollection
+{
+    constructor()
+    {
+        console.log("Creating module-level piano manager collection");
+        this.glcanvas_to_pianoManagers = new Map();
+    }
+
+    notifyPianoManagerCreated(glCanvas, pianoManager)
+    {
+        if(!this.glcanvas_to_pianoManagers.has(glCanvas))
+        {
+            this.glcanvas_to_pianoManagers.set(glCanvas, []);
+        }
+
+        let pianoManagerSet = this.glcanvas_to_pianoManagers.get(glCanvas);
+        if(!pianoManagerSet.includes(pianoManager))
+        {
+            pianoManagerSet.push(pianoManager);
+        }
+    }
+    notifyRequestDeletePianoManager(glCanvas, pianoManager)
+    {
+        //#todo this should probably alert all statics to stop listening to events for this manager; otherwise we have dangling pointers
+        if(!this.glcanvas_to_pianoManagers.has(glCanvas))
+        {
+            console.log("trying to delete piano manager but no piano manager for provided glCanvas");
+            return;
+        }
+
+        let pianoManagerList = this.glcanvas_to_pianoManagers.get(glCanvas);
+
+        if(pianoManagerList.length <= 1)
+        {
+            console.log("delete aborted, last piano.");
+            return;
+        }
+
+        if(pianoManagerList.includes(pianoManager))
+        {
+            let filterOutValue = function(item) 
+            {
+                return item != pianoManager;
+            };
+            let newList = pianoManagerList.filter(filterOutValue);
+            this.glcanvas_to_pianoManagers.set(glCanvas, newList);
+            pianoManager.notifyDeleted();
+        }
+    }
+
+    render(glCanvas, viewMat, perspectiveMat)
+    {
+        let pianoManagers = this.glcanvas_to_pianoManagers.get(glCanvas);
+        if(pianoManagers)
+        {
+            for(const pianoManager of pianoManagers)
+            {
+                pianoManager.render(viewMat, perspectiveMat);
+            }
+        }
+    }
+}
+let pianoManagers = new ModulePianoManagerCollection;
+
+/**
+ *  #important this is the ideal way to manager piano managers. Just create one and let it add itself to this set.
+ *  Then, just render this set. Your piano managers will be able to spawn new piano managers and delete themselves (if there's more than 1)
+ */
+export function getPianoManagerCollection()
+{
+    return pianoManagers;
+}
+
 export class PianoManager extends SceneNode
 {
     constructor(gl, glCanvas, piano, camera)
     {
         super();
+
+        this.gl = gl;
+        this.glCanvas = glCanvas;
+        this.camera = camera;
 
         if (!glCanvas || !camera) { console.log("Did not proved required parameters to PianoManager")}
         if (piano == null){ piano = new Piano(gl, "../shared_resources/Sounds/PianoKeySounds/", 2);}
@@ -1199,11 +1348,14 @@ export class PianoManager extends SceneNode
         this.pianoNode.setParent(this);
         this.pianoNode.setLocalScale(vec3.fromValues(0.5, 0.5, 0.5));
 
-        this.pianoSettings = new PianoSettingsWidget(gl, glCanvas, this.pianoNode);
+        this.pianoSettings = new PianoSettingsWidget(gl, glCanvas, this.pianoNode, this);
         this.pianoSettings.setParent(this);
         this.pianoSettings.requestLayoutRefreshDelegate.addEventListener("requestLayoutRefresh", this._requestLayoutUpdate.bind(this));
 
         this._updateLayout();
+
+        //add piano to a static set of piano managers to be tracked
+        pianoManagers.notifyPianoManagerCreated(glCanvas, this);
     }
 
     _requestLayoutUpdate()
@@ -1242,6 +1394,13 @@ export class PianoManager extends SceneNode
                                                             + pianoScaledWidth + objectSpacing 
                                                             + settingsIconWidth / 2 + 0.075, 0, 0)); //extra space because of illusion of more space created from depad arrows
         
+    }
+
+    notifyDeleted()
+    {
+        this.pianoNode.notifyDeleted();
+        this.pianoSettings.notifyDeleted();
+        this.dragwidget.notifyDeleted();
     }
 
     render(viewMat, perspectiveMat)

@@ -7,7 +7,7 @@ import { Montserrat_BMF } from "../shared_resources/EmeraldUtils/Montserrat_Bitm
 import { CubeRadialButton, RadialPicker } from "../shared_resources/EmeraldUtils/radial_picker.js";
 import { mat4, vec3 } from "../shared_resources/gl-matrix_esm/index.js";
 import { DragWidgetTextured} from "../shared_resources/EmeraldUtils/draggable.js";
-import { PianoManager } from "../shared_resources/EmeraldUtils/music_tools.js";
+import { PianoManager, getPianoManagerCollection } from "../shared_resources/EmeraldUtils/music_tools.js";
 
 
 //////////////////////////////////////////////////////
@@ -441,8 +441,9 @@ class Game
         this.dragWidget.render(viewMat, perspectiveMat);
         this.dragWidgetSelfRegister.render(viewMat, perspectiveMat);
 
-        this.pianoManager.render(viewMat, perspectiveMat);
-        this.pianoManager2.render(viewMat, perspectiveMat);
+        // this.pianoManager.render(viewMat, perspectiveMat);
+        // this.pianoManager2.render(viewMat, perspectiveMat);
+        getPianoManagerCollection().render(this.glCanvas, viewMat, perspectiveMat)
 
         if(!this.bStopTicks)
         {
