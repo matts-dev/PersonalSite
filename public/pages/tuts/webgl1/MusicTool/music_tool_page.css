@@ -9,6 +9,14 @@ body {
     padding : 0;
 }
 
+#glCanvas {
+    width: 80%;
+    /* height: 50%; */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /*
  html, body {
      width:100%;
