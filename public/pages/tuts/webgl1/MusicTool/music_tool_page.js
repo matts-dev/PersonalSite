@@ -44,13 +44,17 @@ class Game
         this.camera = new Camera(vec3.fromValues(0,0,1), vec3.fromValues(0,0,-1));
     
         //create pianos
-        this.piano = new Piano(this.gl, "../shared_resources/Sounds/PianoKeySounds/");
-        this.piano.xform.scale[0] = 0.75;
-        this.piano.xform.scale[1] = 0.75;
+        // this.piano = new Piano(this.gl, "../shared_resources/Sounds/PianoKeySounds/");
+        // this.piano.xform.scale[0] = 0.75;
+        // this.piano.xform.scale[1] = 0.75;
 
         //set up scale
-        this.startScale = new Scale("DSHARP", Music.minorScaleSteps());
-        this.piano.applyScale(this.startScale);
+        // this.startScale = new Scale("DSHARP", Music.minorScaleSteps());
+        // this.piano.applyScale(this.startScale);
+
+        let pianoManager = new Music.PianoManager(this.gl, this.glCanvas, null, this.camera);
+        pianoManager.setLocalPosition(vec3.fromValues(-6, -0.25, 0));
+
 
         this.lineRenderer = new EmeraldUtils.LineRenderer(this.gl);
 
@@ -410,7 +414,8 @@ class Game
         }
 
         //render piano
-        this.piano.render(viewMat, perspectiveMat);
+        // this.piano.render(viewMat, perspectiveMat);
+        Music.getPianoManagerCollection().render(this.glCanvas, viewMat, perspectiveMat)
         
         if(!this.bStopTicks)
         {
