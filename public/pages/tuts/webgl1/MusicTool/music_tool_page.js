@@ -241,12 +241,12 @@ class Game
             {
                 let rayDir = vec3.sub(vec3.create(), this.rayEnd, this.rayStart);
                 vec3.normalize(rayDir, rayDir);
-                let clickedKey = this.piano.clickTest(this.rayStart, rayDir);
-                if(clickedKey)
-                {
-                    this.rayEnd = null;
-                    this.rayStart = null;
-                }
+                // let clickedKey = this.piano.clickTest(this.rayStart, rayDir);
+                // if(clickedKey)
+                // {
+                //     this.rayEnd = null;
+                //     this.rayStart = null;
+                // }
             }
         }
     }
