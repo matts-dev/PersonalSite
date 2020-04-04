@@ -59,7 +59,7 @@ export class SceneNode
 
     getLocalModelMat()
     {
-        if(this.isDirty) { this._cleanState();}
+        if(this.isDirty()) { this._cleanState();}
         return mat4.copy(mat4.create(), this.cached_LocalModelMat);
     }
 
