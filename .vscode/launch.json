@@ -57,6 +57,15 @@
             "url":"http://127.0.0.1:5500/public/pages/tuts/webgl1/MusicTool/index.html",
             "webRoot": "${workspaceFolder}"
         },
+        
+        {
+            "type":"chrome",
+            "request":"launch",
+            "name": "Launch Music Tool New Version",
+            "url":"http://127.0.0.1:5500/public/pages/tuts/webgl1/MusicTool/music_tool_page.html",
+            "webRoot": "${workspaceFolder}"
+        },
+
 
         {
             "type":"chrome",

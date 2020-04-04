@@ -6,8 +6,8 @@
 }
 
 body {
-    background-image: url("./media/PixelArtBackgrounds/forest-snow.png");
-    /* background-image: url("./media/PixelArtBackgrounds/forest.png"); */
+    /* background-image: url("./media/PixelArtBackgrounds/forest-snow.png"); */
+    background-image: url("./media/PixelArtBackgrounds/forest.png");
     /* background-image: url("./media/PixelArtBackgrounds/GrassTile_medium.png"); */
     background-repeat: no-repeat;
     background-attachment: fixed;
