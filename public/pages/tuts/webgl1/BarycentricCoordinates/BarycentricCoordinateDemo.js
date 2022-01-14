@@ -189,7 +189,7 @@ Module['FS_createPath']("/PreloadAssets/TutorialEngine", "font", true, true);
     }
   
    }
-   loadPackage({"files": [{"filename": "/PreloadAssets/TutorialEngine/font/Montserrat_ss_alpha_1024x1024_wb.png", "start": 0, "end": 102643, "audio": 0}, {"filename": "/PreloadAssets/TutorialEngine/font/Montserrat_ss_alpha_1024x1024_wb.txt", "start": 102643, "end": 103047, "audio": 0}], "remote_package_size": 103047, "package_uuid": "3e6dbd70-31e0-46b6-ab8b-44d74606a253"});
+   loadPackage({"files": [{"filename": "/PreloadAssets/TutorialEngine/font/Montserrat_ss_alpha_1024x1024_wb.png", "start": 0, "end": 102643, "audio": 0}, {"filename": "/PreloadAssets/TutorialEngine/font/Montserrat_ss_alpha_1024x1024_wb.txt", "start": 102643, "end": 103047, "audio": 0}], "remote_package_size": 103047, "package_uuid": "86054fbd-68a7-4689-a7cc-65883701261d"});
   
   })();
   
